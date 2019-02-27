@@ -2,6 +2,7 @@
 import numpy as np
 import math
 import sklearn.datasets
+import math
 
 
 def get_y(x):
@@ -28,3 +29,15 @@ def sample_data_swissroll(n=10000, noise = 0.1):
 	data[:,0] = x
 	data[:,1] = y
 	return np.array(data)
+
+def sample_data_spiral(n=10000, noise = 0.1):
+	t = np.random.uniform(0.0,9.42, n)
+	x = np.multiply(t,np.cos(t)) + np.random.normal(0, noise, n)
+	y = np.multiply(t,np.sin(t)) + np.random.normal(0, noise, n)
+	z = t + np.random.normal(0, noise, n)
+
+	data = np.zeros((n,3))
+	data[:,0] = x
+	data[:,1] = y
+	data[:,2] = z
+	return data
