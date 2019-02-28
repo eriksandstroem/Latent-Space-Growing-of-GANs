@@ -10,7 +10,7 @@ import logging
 
 parser = argparse.ArgumentParser(description='Tensorflow Training')
 parser.add_argument('--gpu', default=1, type=int, help='epochs (default: 1)')
-parser.add_argument('--batchSize', default=256, type=int, help='batch size (default: 256)')
+parser.add_argument('--batchSize', default=128, type=int, help='batch size (default: 128)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='learning rate (default: 0.001)')
 parser.add_argument('--n', '--noise', default=0.0, type=float, help='noise std (default: 0.0)')
 parser.add_argument('--i', '--iterations', default=30000, type=int, help='iterations (default: 10 000)')
@@ -56,11 +56,6 @@ sb.set()
 # Batch size setting
 batch_size = arg.batchSize
 
-def sample_Z(batchsize, dim):
-    if arg.z == 'Uniform':
-        return np.random.uniform(-1., 1., size=[batchsize, dim])
-    elif arg.z == 'Gaussian':
-        return np.random.normal(0, 1, size=[batchsize, dim])
 
 def generator(Z,reuse=False):
     if arg.g == '2.16':
@@ -175,7 +170,7 @@ x_plot = sample_data_swissroll(n=batch_size, noise = noise)
 
 for i in range(arg.i):
     X_batch = sample_data_swissroll(n=batch_size, noise = noise)
-    Z_batch = sample_Z(batch_size, arg.zdim)
+    Z_batch = sample_Z(batch_size, arg.zdim, arg.z)
 
     for _ in range(nd_steps):
         _, dloss = sess.run([disc_step, disc_loss], feed_dict={X: X_batch, Z: Z_batch})
@@ -203,5 +198,7 @@ for i in range(arg.i):
         plt.tight_layout()
         plt.savefig('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'/iteration_%i.png'%i)
         plt.close()
+
+
 
 save_path = saver.save(sess, '../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'/model')
