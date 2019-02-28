@@ -139,10 +139,10 @@ with tf.Session() as sess:
 	saver.restore(sess, location)
 
 	X_batch = sample_data_swissroll(n=500, noise = arg.n)
-	if arg.zdim == 2
+	if arg.zdim == 2:
 		Z_batch = np.mgrid[-1:1:0.01, -1:1:0.01].reshape(2,-1).T
-	elif arg.zdim == 1
-		Z_batch = np.arange(-1:1.01:0.01)
+	elif arg.zdim == 1:
+		Z_batch = np.arange(-1,1.01,0.01)
 
 	d_logits = sess.run(r_logits, feed_dict={X: X_batch})
 	g_logits = sess.run(f_logits, feed_dict={Z: Z_batch})
