@@ -147,8 +147,8 @@ with tf.Session() as sess:
 	g_prob = 1/(1+np.exp(g_logits))
 	mean_prob_d = np.mean(d_prob)
 	mean_prob_g = np.mean(g_prob)
-	print("Average discriminator output for REAL samples:", mean_prob_d)
-	print("Average discriminator output for FAKE samples:", mean_prob_g)
+	#print("Average discriminator output for REAL samples:", mean_prob_d)
+	#print("Average discriminator output for FAKE samples:", mean_prob_g)
 
 	# -------------- generate points sampled densly in a grid and plot results together with discriminator score as background --------------
 
@@ -187,7 +187,9 @@ with tf.Session() as sess:
 
 	fig.colorbar(gax, cax=cax, ax=[ax1,ax2])
 
-	fig.subplots_adjust(left=0.3)
+	textstr = 'D_r avg:'+str(mean_prob_d)[:-4]+'    D_f avg:'+str(mean_prob_g)[:-4]
+	plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
+	fig.subplots_adjust(left=0.3, bottom=0.13)
 	fig.savefig('../dense_plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'.png', bbox_inches='tight')
 
 
