@@ -145,7 +145,7 @@ elif arg.l == 'wgan':
     D_loss_fake = tf.reduce_mean(f_logits)
     D_loss_real = -tf.reduce_mean(r_logits) + hyperparameter*gradient_penalty
 
-    gen_loss = -tf.reduce_mean(f_logits) #+ tf.reduce_mean(D_real)
+    gen_loss = -tf.reduce_mean(f_logits) 
 
     disc_loss = D_loss_real + D_loss_fake
 
