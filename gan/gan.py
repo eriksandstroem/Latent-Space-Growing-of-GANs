@@ -156,8 +156,9 @@ disc_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(disc_loss,va
 #gen_step = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
 #disc_step = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
 # Adam
-#gen_step = tf.train.AdamOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
-#disc_step = tf.train.AdamOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
+#gen_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(gen_loss, var_list=gen_vars) # G Train step
+#disc_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(disc_loss, var_list=disc_vars) # D Train step
+
 
 
 # include saver
