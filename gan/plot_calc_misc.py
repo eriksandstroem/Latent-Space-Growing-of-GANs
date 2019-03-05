@@ -130,12 +130,13 @@ f_logits = discriminator(G_sample,reuse=True)
 
 # initialize all variables
 init_op = tf.global_variables_initializer() # create the graph
-saver = tf.train.Saver()
+saver = tf.train.Saver() #pass list of old parameters in the parentethis later
 
 x_plot = sample_data_swissroll(n=500, noise = arg.n)
 
 with tf.Session() as sess:
 	location = '../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'/model'
+	#sess.run(init_op)
 	saver.restore(sess, location)
 
 	X_batch = sample_data_swissroll(n=500, noise = arg.n)
@@ -143,11 +144,12 @@ with tf.Session() as sess:
 		Z_batch = np.mgrid[-1:1:0.01, -1:1:0.01].reshape(2,-1).T
 	elif arg.zdim == 1:
 		Z_batch = np.arange(-1,1.01,0.01)
+		Z_batch = np.reshape(Z_batch,(len(Z_batch),1))
 
 	d_logits = sess.run(r_logits, feed_dict={X: X_batch})
 	g_logits = sess.run(f_logits, feed_dict={Z: Z_batch})
-	d_prob = 1/(1+np.exp(d_logits))
-	g_prob = 1/(1+np.exp(g_logits))
+	d_prob = 1/(1+np.exp(-d_logits))
+	g_prob = 1/(1+np.exp(-g_logits))
 	mean_prob_d = np.mean(d_prob)
 	mean_prob_g = np.mean(g_prob)
 	#print("Average discriminator output for REAL samples:", mean_prob_d)
@@ -166,16 +168,25 @@ with tf.Session() as sess:
 	g2 = np.reshape(g_plot[:,1],(len(g_plot),1))
 	cd = np.reshape(d_prob,(500,1))
 	cg = np.reshape(g_prob,(len(g_plot),1))
+	if arg.zdim == 2:
+		gax = ax1.scatter(g1, g2, c = cg, marker='.',s=2)
+	elif arg.zdim == 1:
+		gax = ax1.scatter(g1, g2, c = cg, marker='.',s=20)
+		
 	xax = ax1.scatter(x1,x2, c = cd, marker='x')
-	gax = ax1.scatter(g1, g2, c = cg, marker='.',s=2)
 	ax1.legend((xax,gax), ("Real Data", "Generated Data"))
 	ax1.set_xlabel('x')
 	ax1.set_ylabel('y')
 	ax1.set_title('Sample Space')
 
-	z1 = np.reshape(Z_batch[:,0],(len(Z_batch),1))
-	z2 = np.reshape(Z_batch[:,1],(len(Z_batch),1))
-	ax2.scatter(z1, z2, c = cg, marker='.',s=1)
+	if arg.zdim == 2:
+		z1 = np.reshape(Z_batch[:,0],(len(Z_batch),1))
+		z2 = np.reshape(Z_batch[:,1],(len(Z_batch),1))
+		ax2.scatter(z1, z2, c = cg, marker='.',s=1)
+	elif arg.zdim == 1:
+		z1 = Z_batch
+		ax2.scatter(z1, np.zeros(len(Z_batch)) ,c = cg, marker = '.', s=30)
+
 	ax2.set_xlabel('x')
 	ax2.set_ylabel('y')
 	ax2.set_title('Latent Space')

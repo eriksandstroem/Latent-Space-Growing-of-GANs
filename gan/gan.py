@@ -120,12 +120,12 @@ f_logits = discriminator(G_sample,reuse=True)
 
 
 if arg.l == 'nonsatgan':
-    disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=r_logits,labels=tf.ones_like(r_logits)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.zeros_like(f_logits)))
-    gen_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.ones_like(f_logits)))
+    disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=r_logits,labels=tf.zeros_like(r_logits)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.ones_like(f_logits)))
+    gen_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.zeros_like(f_logits)))
 elif arg.l == 'wgan':
     hyperparameter = 10
-    #alpha = tf.random_uniform(shape=[batch_size,1,1,1],minval=0., maxval=1.)
-    alpha = tf.ones([batch_size,1,1,1],dtype=tf.float32)
+    alpha = tf.random_uniform(shape=[batch_size,1,1,1],minval=0., maxval=1.)
+    #alpha = tf.ones([batch_size,1,1,1],dtype=tf.float32)
     xhat = tf.add( tf.multiply(alpha,X), tf.multiply((1-alpha),G_sample))
     D_xhat = discriminator(xhat, reuse=True)
 
@@ -149,9 +149,15 @@ elif arg.l == 'wgan':
 gen_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Generator")
 disc_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Discriminator")
 
+# RMSProp
 gen_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
 disc_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
-
+# SGD
+#gen_step = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
+#disc_step = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
+# Adam
+#gen_step = tf.train.AdamOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
+#disc_step = tf.train.AdamOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
 
 
 # include saver
@@ -181,8 +187,6 @@ for i in range(arg.i):
     
     if i%50 == 0:
         logger.info('==>>> iteration:{}, g loss:{}, d loss:{}'.format(i, gloss, dloss))
-    #if i%200 == 0:
-    #    print("Iterations: %d\t Discriminator loss: %.4f\t Generator loss: %.4f"%(i,dloss,gloss))
 
     if i%1000 == 0:
         g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
