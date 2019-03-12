@@ -13,30 +13,31 @@ parser.add_argument('--gpu', default=1, type=int, help='epochs (default: 1)')
 parser.add_argument('--batchSize', default=128, type=int, help='batch size (default: 128)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='learning rate (default: 0.001)')
 parser.add_argument('--n', '--noise', default=0.0, type=float, help='noise std (default: 0.0)')
-parser.add_argument('--i', '--iterations', default=30000, type=int, help='iterations (default: 10 000)')
-parser.add_argument('--z', '--zdistribution', default='Uniform', choices=['Uniform', 'Gaussian'], help="z-distribution (default: Uniform)")
-parser.add_argument('--opt', '--optimizer', default='SGD', choices=['SGD', 'RMSProp', 'Adam'], help="optimizer (default: SGD)")
+parser.add_argument('--i', '--iterations', default=30050, type=int, help='iterations (default: 30 050)')
+parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
+parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
 parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
 #parser.add_argument('--m', '--momentum', default=0.9, type=float, help='momentum (default: 0.9)')
 #parser.add_argument('--w', '--weight-decay', default=0, type=float, help='regularization weight decay (default: 0.0)')
 
 # notation: a.b = #hidden layers.#neurons per layer
 parser.add_argument('--arch', '--architecture', default='2.16', help="architecture (default: 2.16)")
-parser.add_argument('--l', '--loss', default='wgan', choices=['nonsatgan', 'wgan'], help="loss function (default: 2.16)")
+parser.add_argument('--l', '--loss', default='wa', choices=['ns', 'wa'], help="loss function (default: wa)")
+parser.add_argument('--a', '--activation', default='lre', help="activation (default: leaky relu)")
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../models/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
-    os.makedirs('../models/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
-if not os.path.exists('../logs/'+arg.arch):
-    os.makedirs('../logs/'+arg.arch)
-if not os.path.exists('../plots/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
-    os.makedirs('../plots/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
+if not os.path.exists('../../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
+    os.makedirs('../../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
+if not os.path.exists('../../logs/'+arg.arch):
+    os.makedirs('../../logs/'+arg.arch)
+if not os.path.exists('../../plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
+    os.makedirs('../../plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
 
 # Logger Setting
 logger = logging.getLogger('netlog')
 logger.setLevel(logging.INFO)
-ch = logging.FileHandler('../logs/'+arg.arch+'/logfile_noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'.log')
+ch = logging.FileHandler('../../logs/'+arg.arch+'/log_n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log')
 ch.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
@@ -45,17 +46,15 @@ logger.info("================================================")
 logger.info("Learning Rate: {}".format(arg.lr))
 logger.info("Noise: {}".format(arg.n))
 logger.info("Iterations: {}".format(arg.i))
-logger.info("Discriminator: "+arg.d)
-logger.info("Generator: "+arg.g)
+logger.info("Architecture: "+arg.arch)
 logger.info("Batch Size: {}".format(arg.batchSize))
 logger.info("Z-dimension: {}".format(arg.zdim))
 logger.info("Z-distribution: {}".format(arg.z))
 logger.info("Loss: "+arg.l)
 logger.info("Optimizer: "+arg.opt)
+logger.info("Activation Function: "+arg.a)
 
 sb.set()
-# Batch size setting
-batch_size = arg.batchSize
 
 # define the graph
 def generator(Z,reuse=False, arch = '2.16'):
@@ -134,17 +133,17 @@ def discriminator(X,reuse=False, arch = '2.16'):
 X = tf.placeholder(tf.float32,[None,2])
 Z = tf.placeholder(tf.float32,[None,arg.zdim])
 
-G_sample = generator(Z)
-r_logits = discriminator(X)
-f_logits = discriminator(G_sample,reuse=True)
+G_sample = generator(Z, arch = arg.arch)
+r_logits = discriminator(X, arch = arg.arch)
+f_logits = discriminator(G_sample,reuse=True, arch = arg.arch)
 
 
-if arg.l == 'nonsatgan':
+if arg.l == 'ns':
     disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=r_logits,labels=tf.zeros_like(r_logits)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.ones_like(f_logits)))
     gen_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.zeros_like(f_logits)))
-elif arg.l == 'wgan':
+elif arg.l == 'wa':
     hyperparameter = 10
-    alpha = tf.random_uniform(shape=[batch_size,1,1,1],minval=0., maxval=1.)
+    alpha = tf.random_uniform(shape=[arg.batchSize,1,1,1],minval=0., maxval=1.)
     #alpha = tf.ones([batch_size,1,1,1],dtype=tf.float32)
     xhat = tf.add( tf.multiply(alpha,X), tf.multiply((1-alpha),G_sample))
     D_xhat = discriminator(xhat, reuse=True)
@@ -169,13 +168,13 @@ elif arg.l == 'wgan':
 gen_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Generator")
 disc_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Discriminator")
 
-if arg.opt == 'RMSProp':
+if arg.opt == 'rms':
     gen_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
     disc_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
-if arg.opt == 'SGD':
+if arg.opt == 'sgd':
     gen_step = tf.train.MomentumOptimizer(learning_rate=0.001, momentum=0.9).minimize(gen_loss,var_list = gen_vars) # G Train step
     disc_step = tf.train.MomentumOptimizer(learning_rate=0.001, momentum=0.9).minimize(disc_loss,var_list = disc_vars) # D Train step
-if arg.opt == 'Adam':
+if arg.opt == 'ad':
     gen_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(gen_loss, var_list=gen_vars) # G Train step
     disc_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(disc_loss, var_list=disc_vars) # D Train step
 
@@ -183,19 +182,21 @@ if arg.opt == 'Adam':
 saver = tf.train.Saver()
 
 config = tf.ConfigProto(device_count = {'GPU': arg.gpu+1})
+# The config for GPU usage
+config = tf.ConfigProto()
+config.gpu_options.visible_device_list=str(arg.gpu)
 sess = tf.Session(config=config)
 tf.global_variables_initializer().run(session=sess)
 
 
 nd_steps = 10
 ng_steps = 10
-noise = arg.n
 
-x_plot = sample_data_swissroll(n=batch_size, noise = noise)
+x_plot = sample_data_swissroll(n=arg.batchSize, noise = arg.n)
 
 for i in range(arg.i):
-    X_batch = sample_data_swissroll(n=batch_size, noise = noise)
-    Z_batch = sample_Z(batch_size, arg.zdim, arg.z)
+    X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.n)
+    Z_batch = sample_Z(arg.batchSize, arg.zdim, arg.z)
 
     for _ in range(nd_steps):
         _, dloss = sess.run([disc_step, disc_loss], feed_dict={X: X_batch, Z: Z_batch})
@@ -219,10 +220,10 @@ for i in range(arg.i):
         plt.ylabel('y')
         plt.title('Swiss Roll Data')
         plt.tight_layout()
-        plt.savefig('../plots/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/iteration_%i.png'%i)
+        plt.savefig('../../plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/iteration_%i.png'%i)
         plt.close()
 
 
 
-saver.save(sess, '../models/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/model')
+saver.save(sess, '../../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model')
 sess.close()

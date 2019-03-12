@@ -43,7 +43,7 @@ def sample_data_spiral(n=10000, noise = 0.1):
 	return data
 
 def sample_Z(batchsize, dim, z):
-    if z == 'Uniform':
+    if z == 'u':
         return np.random.uniform(-1., 1., size=[batchsize, dim])
-    elif z == 'Gaussian':
+    elif z == 'g':
         return np.random.normal(0, 1, size=[batchsize, dim])

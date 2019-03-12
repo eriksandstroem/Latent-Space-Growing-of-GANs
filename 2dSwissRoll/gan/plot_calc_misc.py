@@ -12,29 +12,30 @@ from mpl_toolkits.axes_grid1.inset_locator import InsetPosition
 
 # -------------- plot loss function of discriminator and generator --------------
 parser = argparse.ArgumentParser(description='Plot Loss function')
-parser.add_argument('--n', '--noise', default=0.0, type=float, help='noise std (default: 0.0)')
+parser.add_argument('--gpu', default=1, type=int, help='epochs (default: 1)')
 parser.add_argument('--batchSize', default=128, type=int, help='batch size (default: 128)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='learning rate (default: 0.001)')
-parser.add_argument('--i', '--iterations', default=30000, type=int, help='iterations (default: 10 000)')
-parser.add_argument('--z', '--zdistribution', default='Uniform', choices=['Uniform', 'Gaussian'], help="z-distribution (default: Uniform)")
+parser.add_argument('--n', '--noise', default=0.0, type=float, help='noise std (default: 0.0)')
+parser.add_argument('--i', '--iterations', default=30000, type=int, help='iterations (default: 30 000)')
+parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
+parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
 parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
 #parser.add_argument('--m', '--momentum', default=0.9, type=float, help='momentum (default: 0.9)')
 #parser.add_argument('--w', '--weight-decay', default=0, type=float, help='regularization weight decay (default: 0.0)')
 
 # notation: a.b = #hidden layers.#neurons per layer
-parser.add_argument('--g', '--generator', default='2.16', choices=['2.16', '3.2','3.8'], help="generator (default: 2.16)")
-parser.add_argument('--d', '--discriminator', default='2.16', choices=['2.16', '3.2', '3.8'], help="discriminator (default: 2.16)")
-parser.add_argument('--l', '--loss', default='wgan', choices=['nonsatgan', 'wgan'], help="loss function (default: 2.16)")
+parser.add_argument('--arch', '--architecture', default='2.16', help="architecture (default: 2.16)")
+parser.add_argument('--l', '--loss', default='wa', choices=['ns', 'wa'], help="loss function (default: wa)")
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../loss_plots/g_'+arg.g+'/d_'+arg.d):
-    os.makedirs('../loss_plots/g_'+arg.g+'/d_'+arg.d)
-if not os.path.exists('../grid_plots/g_'+arg.g+'/d_'+arg.d):
-    os.makedirs('../grid_plots/g_'+arg.g+'/d_'+arg.d)
+if not os.path.exists('../loss_plots/'+arg.arch):
+    os.makedirs('../loss_plots/'+arg.arch)
+if not os.path.exists('../grid_plots/'+arg.arch):
+    os.makedirs('../grid_plots/'+arg.arch)
 
 # retrieve data from log file
-location = '../logs/g_'+arg.g+'/d_'+arg.d+'/logfile_noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'.log'
+location = '../logs/'+arg.arch+'/log_n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.log'
 f  = open(location, "r")
 x = f.readlines()
 d_loss = np.zeros(len(x)-10)
@@ -60,66 +61,34 @@ plt.plot(xaxis, d_loss,label = 'Discriminator Loss')
 plt.plot(xaxis, g_loss,label = 'Generator Loss')
 plt.legend()
 
-plt.savefig('../loss_plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'.png')
+plt.savefig('../loss_plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.png')
 plt.close()
 
 
 # -------------- calculate discriminator statistics for generated images and real images --------------
 
-# create the graph
-def generator(Z,reuse=False):
-    if arg.g == '2.16':
-        with tf.variable_scope("GAN/Generator",reuse=reuse):
-            h1 = tf.layers.dense(Z,16,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,16,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h2,2)
+# define the graph
+def generator(Z,reuse=False, arch = '2.16'):
+    arch = arch.split('.')
+    layers = int(arch[0])
+    nodes = int(arch[1])
+    with tf.variable_scope("GAN/Generator", reuse = reuse):
+        for i in range(layers):
+            h = tf.layers.dense(Z,nodes,activation=tf.nn.leaky_relu, name = 'h'+str(i+1))
+            Z = h
+        out = tf.layers.dense(h,2, name ='out')
+    return out
 
-        return out
-    elif arg.g == '3.2':
-        with tf.variable_scope("GAN/Generator",reuse=reuse):
-            h1 = tf.layers.dense(Z,2,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,2,activation=tf.nn.leaky_relu)
-            h3 = tf.layers.dense(h2,2,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h3,2)
-
-        return out
-
-    elif arg.g == '3.8':
-        with tf.variable_scope("GAN/Generator",reuse=reuse):
-            h1 = tf.layers.dense(Z,8,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,8,activation=tf.nn.leaky_relu)
-            h3 = tf.layers.dense(h2,8,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h3,2)
-
-        return out
-
-def discriminator(X,reuse=False):
-    if arg.d == '2.16':
-        with tf.variable_scope("GAN/Discriminator",reuse=reuse):
-            h1 = tf.layers.dense(X,16,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,16,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h2,1)
-
-        return out
-
-    elif arg.d == '3.2':
-        with tf.variable_scope("GAN/Discriminator",reuse=reuse):
-            h1 = tf.layers.dense(X,2,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,2,activation=tf.nn.leaky_relu)
-            h3 = tf.layers.dense(h2,2,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h3,1)
-
-        return out
-
-    elif arg.d == '3.8':
-        with tf.variable_scope("GAN/Discriminator",reuse=reuse):
-            h1 = tf.layers.dense(X,8,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,8,activation=tf.nn.leaky_relu)
-            h3 = tf.layers.dense(h2,8,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h3,1)
-
-        return out
-
+def discriminator(X,reuse=False, arch = '2.16'):
+    arch = arch.split('.')
+    layers = int(arch[0])
+    nodes = int(arch[1])
+    with tf.variable_scope("GAN/Discriminator", reuse = reuse):
+        for i in range(layers):
+            h = tf.layers.dense(X, nodes, activation=tf.nn.leaky_relu, name = 'h'+str(i+1))
+            X = h
+        out = tf.layers.dense(h,1, name = 'out')
+    return out
 
 X = tf.placeholder(tf.float32,[None,2])
 Z = tf.placeholder(tf.float32,[None,arg.zdim])
@@ -135,7 +104,7 @@ saver = tf.train.Saver() #pass list of old parameters in the parentethis later
 x_plot = sample_data_swissroll(n=500, noise = arg.n)
 
 with tf.Session() as sess:
-	location = '../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'/model'
+	location = '../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'/model'
 	#sess.run(init_op)
 	saver.restore(sess, location)
 
@@ -204,6 +173,6 @@ with tf.Session() as sess:
 	textstr = 'D_r avg:'+str(mean_prob_d)[:-4]+'    D_f avg:'+str(mean_prob_g)[:-4]
 	plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
 	fig.subplots_adjust(left=0.3, bottom=0.13)
-	fig.savefig('../grid_plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'.png', bbox_inches='tight')
+	fig.savefig('../grid_plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.png', bbox_inches='tight')
 
 
