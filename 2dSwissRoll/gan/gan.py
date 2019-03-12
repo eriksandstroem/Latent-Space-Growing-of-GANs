@@ -15,28 +15,29 @@ parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='
 parser.add_argument('--n', '--noise', default=0.0, type=float, help='noise std (default: 0.0)')
 parser.add_argument('--i', '--iterations', default=30000, type=int, help='iterations (default: 10 000)')
 parser.add_argument('--z', '--zdistribution', default='Uniform', choices=['Uniform', 'Gaussian'], help="z-distribution (default: Uniform)")
+parser.add_argument('--opt', '--optimizer', default='SGD', choices=['SGD', 'RMSProp', 'Adam'], help="optimizer (default: SGD)")
 parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
 #parser.add_argument('--m', '--momentum', default=0.9, type=float, help='momentum (default: 0.9)')
 #parser.add_argument('--w', '--weight-decay', default=0, type=float, help='regularization weight decay (default: 0.0)')
 
 # notation: a.b = #hidden layers.#neurons per layer
-parser.add_argument('--g', '--generator', default='2.16', choices=['2.16', '3.2','3.8'], help="generator (default: 2.16)")
-parser.add_argument('--d', '--discriminator', default='2.16', choices=['2.16', '3.2', '3.8'], help="discriminator (default: 2.16)")
+parser.add_argument('--g', '--generator', default='2.16', help="generator (default: 2.16)")
+parser.add_argument('--d', '--discriminator', default='2.16', help="discriminator (default: 2.16)")
 parser.add_argument('--l', '--loss', default='wgan', choices=['nonsatgan', 'wgan'], help="loss function (default: 2.16)")
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l):
-    os.makedirs('../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l)
+if not os.path.exists('../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
+    os.makedirs('../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
 if not os.path.exists('../logs/g_'+arg.g+'/d_'+arg.d):
     os.makedirs('../logs/g_'+arg.g+'/d_'+arg.d)
-if not os.path.exists('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l):
-    os.makedirs('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l)
-        
+if not os.path.exists('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
+    os.makedirs('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
+
 # Logger Setting
 logger = logging.getLogger('netlog')
 logger.setLevel(logging.INFO)
-ch = logging.FileHandler('../logs/g_'+arg.g+'/d_'+arg.d+'/logfile_noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'.log')
+ch = logging.FileHandler('../logs/g_'+arg.g+'/d_'+arg.d+'/logfile_noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'.log')
 ch.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
@@ -51,64 +52,84 @@ logger.info("Batch Size: {}".format(arg.batchSize))
 logger.info("Z-dimension: {}".format(arg.zdim))
 logger.info("Z-distribution: {}".format(arg.z))
 logger.info("Loss: "+arg.l)
+logger.info("Optimizer: "+arg.opt)
 
 sb.set()
 # Batch size setting
 batch_size = arg.batchSize
 
+# define the graph
+def generator(Z,reuse=False, arch = '2.16'):
+    arch = arch.split('.')
+    layers = int(arch[0])
+    nodes = int(arch[1])
+    with tf.variable_scope("GAN/Generator", reuse = reuse):
+        for i in range(layers):
+            h = tf.layers.dense(Z,nodes,activation=tf.nn.leaky_relu, name = 'h'+str(i+1))
+            Z = h
+        out = tf.layers.dense(h,2, name ='out')
+    return out
+# def generator(Z,reuse=False):
+#     if arg.g == '2.16':
+#         with tf.variable_scope("GAN/Generator",reuse=reuse):
+#             h1 = tf.layers.dense(Z,16,activation=tf.nn.leaky_relu)
+#             h2 = tf.layers.dense(h1,16,activation=tf.nn.leaky_relu)
+#             out = tf.layers.dense(h2,2)
 
-def generator(Z,reuse=False):
-    if arg.g == '2.16':
-        with tf.variable_scope("GAN/Generator",reuse=reuse):
-            h1 = tf.layers.dense(Z,16,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,16,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h2,2)
+#         return out
+#     elif arg.g == '3.2':
+#         with tf.variable_scope("GAN/Generator",reuse=reuse):
+#             h1 = tf.layers.dense(Z,2,activation=tf.nn.leaky_relu)
+#             h2 = tf.layers.dense(h1,2,activation=tf.nn.leaky_relu)
+#             h3 = tf.layers.dense(h2,2,activation=tf.nn.leaky_relu)
+#             out = tf.layers.dense(h3,2)
 
-        return out
-    elif arg.g == '3.2':
-        with tf.variable_scope("GAN/Generator",reuse=reuse):
-            h1 = tf.layers.dense(Z,2,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,2,activation=tf.nn.leaky_relu)
-            h3 = tf.layers.dense(h2,2,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h3,2)
+#         return out
 
-        return out
+#     elif arg.g == '3.8':
+#         with tf.variable_scope("GAN/Generator",reuse=reuse):
+#             h1 = tf.layers.dense(Z,8,activation=tf.nn.leaky_relu)
+#             h2 = tf.layers.dense(h1,8,activation=tf.nn.leaky_relu)
+#             h3 = tf.layers.dense(h2,8,activation=tf.nn.leaky_relu)
+#             out = tf.layers.dense(h3,2)
 
-    elif arg.g == '3.8':
-        with tf.variable_scope("GAN/Generator",reuse=reuse):
-            h1 = tf.layers.dense(Z,8,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,8,activation=tf.nn.leaky_relu)
-            h3 = tf.layers.dense(h2,8,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h3,2)
+#         return out
+def discriminator(X,reuse=False, arch = '2.16'):
+    arch = arch.split('.')
+    layers = int(arch[0])
+    nodes = int(arch[1])
+    with tf.variable_scope("GAN/Discriminator", reuse = reuse):
+        for i in range(layers):
+            h = tf.layers.dense(X, nodes, activation=tf.nn.leaky_relu, name = 'h'+str(i+1))
+            X = h
+        out = tf.layers.dense(h,1, name = 'out')
+    return out
+# def discriminator(X,reuse=False):
+#     if arg.d == '2.16':
+#         with tf.variable_scope("GAN/Discriminator",reuse=reuse):
+#             h1 = tf.layers.dense(X,16,activation=tf.nn.leaky_relu)
+#             h2 = tf.layers.dense(h1,16,activation=tf.nn.leaky_relu)
+#             out = tf.layers.dense(h2,1)
 
-        return out
+#         return out
 
-def discriminator(X,reuse=False):
-    if arg.d == '2.16':
-        with tf.variable_scope("GAN/Discriminator",reuse=reuse):
-            h1 = tf.layers.dense(X,16,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,16,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h2,1)
+#     elif arg.d == '3.2':
+#         with tf.variable_scope("GAN/Discriminator",reuse=reuse):
+#             h1 = tf.layers.dense(X,2,activation=tf.nn.leaky_relu)
+#             h2 = tf.layers.dense(h1,2,activation=tf.nn.leaky_relu)
+#             h3 = tf.layers.dense(h2,2,activation=tf.nn.leaky_relu)
+#             out = tf.layers.dense(h3,1)
 
-        return out
+#         return out
 
-    elif arg.d == '3.2':
-        with tf.variable_scope("GAN/Discriminator",reuse=reuse):
-            h1 = tf.layers.dense(X,2,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,2,activation=tf.nn.leaky_relu)
-            h3 = tf.layers.dense(h2,2,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h3,1)
+#     elif arg.d == '3.8':
+#         with tf.variable_scope("GAN/Discriminator",reuse=reuse):
+#             h1 = tf.layers.dense(X,8,activation=tf.nn.leaky_relu)
+#             h2 = tf.layers.dense(h1,8,activation=tf.nn.leaky_relu)
+#             h3 = tf.layers.dense(h2,8,activation=tf.nn.leaky_relu)
+#             out = tf.layers.dense(h3,1)
 
-        return out
-
-    elif arg.d == '3.8':
-        with tf.variable_scope("GAN/Discriminator",reuse=reuse):
-            h1 = tf.layers.dense(X,8,activation=tf.nn.leaky_relu)
-            h2 = tf.layers.dense(h1,8,activation=tf.nn.leaky_relu)
-            h3 = tf.layers.dense(h2,8,activation=tf.nn.leaky_relu)
-            out = tf.layers.dense(h3,1)
-
-        return out
+#         return out
 
 
 X = tf.placeholder(tf.float32,[None,2])
@@ -149,17 +170,15 @@ elif arg.l == 'wgan':
 gen_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Generator")
 disc_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Discriminator")
 
-# RMSProp
-#gen_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
-#disc_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
-# SGD
-#gen_step = tf.train.MomentumOptimizer(learning_rate=0.001, momentum=0.9).minimize(gen_loss,var_list = gen_vars) # G Train step
-#disc_step = tf.train.MomentumOptimizer(learning_rate=0.001, momentum=0.9).minimize(disc_loss,var_list = disc_vars) # D Train step
-# Adam
-gen_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(gen_loss, var_list=gen_vars) # G Train step
-disc_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(disc_loss, var_list=disc_vars) # D Train step
-
-
+if arg.opt == 'RMSProp':
+    gen_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
+    disc_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
+if arg.opt == 'SGD':
+    gen_step = tf.train.MomentumOptimizer(learning_rate=0.001, momentum=0.9).minimize(gen_loss,var_list = gen_vars) # G Train step
+    disc_step = tf.train.MomentumOptimizer(learning_rate=0.001, momentum=0.9).minimize(disc_loss,var_list = disc_vars) # D Train step
+if arg.opt == 'Adam':
+    gen_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(gen_loss, var_list=gen_vars) # G Train step
+    disc_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(disc_loss, var_list=disc_vars) # D Train step
 
 # include saver
 saver = tf.train.Saver()
@@ -201,10 +220,10 @@ for i in range(arg.i):
         plt.ylabel('y')
         plt.title('Swiss Roll Data')
         plt.tight_layout()
-        plt.savefig('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'/iteration_%i.png'%i)
+        plt.savefig('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/iteration_%i.png'%i)
         plt.close()
 
 
 
-save_path = saver.save(sess, '../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'/model')
+saver.save(sess, '../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/model')
 sess.close()
