@@ -33,12 +33,12 @@ parser.add_argument('--l', '--loss', default='wgan', choices=['nonsatgan', 'wgan
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../models/g_'+arg.g+'grown/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
-    os.makedirs('../models/g_'+arg.g+'grown/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
-if not os.path.exists('../logs/g_'+arg.g+'grown/d_'+arg.d):
-    os.makedirs('../logs/g_'+arg.g+'grown/d_'+arg.d)
-if not os.path.exists('../plots/g_'+arg.g+'grown/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
-    os.makedirs('../plots/g_'+arg.g+'grown/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
+if not os.path.exists('../models/'+arg.arch+'_grown/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
+    os.makedirs('../models/'+arg.arch+'_grown/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
+if not os.path.exists('../logs/'+arg.arch+'_grown'):
+    os.makedirs('../logs/'+arg.arch+'_grown')
+if not os.path.exists('../plots/'+arg.arch+'_grown/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
+    os.makedirs('../plots/'+arg.arch+'_grown/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
 
 # define batchsize
 batch_size = arg.batchSize
@@ -71,7 +71,7 @@ Z = tf.placeholder(tf.float32,[None,1])
 G_sample = generator(Z, arch = arg.g)
 
 Z_batch = np.ones((1,1)) #np.random.uniform(-1., 1., size=[1, 1]) REMOVE LATER
-old_model_location = '../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/model'
+old_model_location = '../models/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/model'
 saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Generator"))
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())

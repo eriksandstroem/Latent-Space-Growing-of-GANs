@@ -21,23 +21,22 @@ parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2
 #parser.add_argument('--w', '--weight-decay', default=0, type=float, help='regularization weight decay (default: 0.0)')
 
 # notation: a.b = #hidden layers.#neurons per layer
-parser.add_argument('--g', '--generator', default='2.16', help="generator (default: 2.16)")
-parser.add_argument('--d', '--discriminator', default='2.16', help="discriminator (default: 2.16)")
+parser.add_argument('--arch', '--architecture', default='2.16', help="architecture (default: 2.16)")
 parser.add_argument('--l', '--loss', default='wgan', choices=['nonsatgan', 'wgan'], help="loss function (default: 2.16)")
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
-    os.makedirs('../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
-if not os.path.exists('../logs/g_'+arg.g+'/d_'+arg.d):
-    os.makedirs('../logs/g_'+arg.g+'/d_'+arg.d)
-if not os.path.exists('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
-    os.makedirs('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
+if not os.path.exists('../models/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
+    os.makedirs('../models/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
+if not os.path.exists('../logs/'+arg.arch):
+    os.makedirs('../logs/'+arg.arch)
+if not os.path.exists('../plots/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt):
+    os.makedirs('../plots/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt)
 
 # Logger Setting
 logger = logging.getLogger('netlog')
 logger.setLevel(logging.INFO)
-ch = logging.FileHandler('../logs/g_'+arg.g+'/d_'+arg.d+'/logfile_noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'.log')
+ch = logging.FileHandler('../logs/'+arg.arch+'/logfile_noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'.log')
 ch.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
@@ -220,10 +219,10 @@ for i in range(arg.i):
         plt.ylabel('y')
         plt.title('Swiss Roll Data')
         plt.tight_layout()
-        plt.savefig('../plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/iteration_%i.png'%i)
+        plt.savefig('../plots/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/iteration_%i.png'%i)
         plt.close()
 
 
 
-saver.save(sess, '../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/model')
+saver.save(sess, '../models/'+arg.arch+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'_opt_'+arg.opt+'/model')
 sess.close()
