@@ -135,8 +135,8 @@ elif arg.l == 'wgan':
     #print('gradientdim', gradients) #(256,1,?,2) same as xhat
     slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1,2,3]))
     #print('slpopedim:', slopes.shape) # (256,1)
-    gradient_penalty = tf.reduce_mean(tf.clip_by_value(slopes - 1., 0., np.infty)**2)
-
+    #gradient_penalty = tf.reduce_mean(tf.clip_by_value(slopes - 1., 0., np.infty)**2)
+    gradient_penalty = tf.reduce_mean((slopes-1.)**2)
     D_loss_fake = tf.reduce_mean(f_logits)
     D_loss_real = -tf.reduce_mean(r_logits) + hyperparameter*gradient_penalty
 
@@ -150,14 +150,14 @@ gen_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Generator"
 disc_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Discriminator")
 
 # RMSProp
-gen_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
-disc_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
+#gen_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
+#disc_step = tf.train.RMSPropOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
 # SGD
-#gen_step = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(gen_loss,var_list = gen_vars) # G Train step
-#disc_step = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(disc_loss,var_list = disc_vars) # D Train step
+#gen_step = tf.train.MomentumOptimizer(learning_rate=0.001, momentum=0.9).minimize(gen_loss,var_list = gen_vars) # G Train step
+#disc_step = tf.train.MomentumOptimizer(learning_rate=0.001, momentum=0.9).minimize(disc_loss,var_list = disc_vars) # D Train step
 # Adam
-#gen_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(gen_loss, var_list=gen_vars) # G Train step
-#disc_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(disc_loss, var_list=disc_vars) # D Train step
+gen_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(gen_loss, var_list=gen_vars) # G Train step
+disc_step = tf.train.AdamOptimizer(learning_rate=arg.lr, beta1=0.5, beta2=0.9).minimize(disc_loss, var_list=disc_vars) # D Train step
 
 
 
@@ -207,3 +207,4 @@ for i in range(arg.i):
 
 
 save_path = saver.save(sess, '../models/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'/model')
+sess.close()
