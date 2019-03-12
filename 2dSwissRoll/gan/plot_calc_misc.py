@@ -30,8 +30,8 @@ arg = parser.parse_args()
 # create model directory to store/load old model
 if not os.path.exists('../loss_plots/g_'+arg.g+'/d_'+arg.d):
     os.makedirs('../loss_plots/g_'+arg.g+'/d_'+arg.d)
-if not os.path.exists('../dense_plots/g_'+arg.g+'/d_'+arg.d):
-    os.makedirs('../dense_plots/g_'+arg.g+'/d_'+arg.d)
+if not os.path.exists('../grid_plots/g_'+arg.g+'/d_'+arg.d):
+    os.makedirs('../grid_plots/g_'+arg.g+'/d_'+arg.d)
 
 # retrieve data from log file
 location = '../logs/g_'+arg.g+'/d_'+arg.d+'/logfile_noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'.log'
@@ -204,6 +204,6 @@ with tf.Session() as sess:
 	textstr = 'D_r avg:'+str(mean_prob_d)[:-4]+'    D_f avg:'+str(mean_prob_g)[:-4]
 	plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
 	fig.subplots_adjust(left=0.3, bottom=0.13)
-	fig.savefig('../dense_plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'.png', bbox_inches='tight')
+	fig.savefig('../grid_plots/g_'+arg.g+'/d_'+arg.d+'/noise_'+str(arg.n)+'_lr_'+str(arg.lr)+'_zdim_'+str(arg.zdim)+'_z_'+arg.z+'_loss_'+arg.l+'.png', bbox_inches='tight')
 
 
