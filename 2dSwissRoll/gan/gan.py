@@ -7,6 +7,9 @@ import time
 import os
 import argparse
 import logging
+import matplotlib
+matplotlib.use('agg')
+plt.ioff()
 
 parser = argparse.ArgumentParser(description='Tensorflow Training')
 parser.add_argument('--gpu', default=1, type=int, help='epochs (default: 1)')

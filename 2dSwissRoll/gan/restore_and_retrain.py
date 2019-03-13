@@ -29,12 +29,12 @@ parser.add_argument('--a', '--activation', default='lre', help="activation (defa
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../models/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init):
-    os.makedirs('../models/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init)
-if not os.path.exists('../logs/'+arg.arch+'_grown'):
-    os.makedirs('../logs/'+arg.arch+'_grown')
+if not os.path.exists('../../models/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init):
+    os.makedirs('../../models/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init)
+if not os.path.exists('../../logs/'+arg.arch+'_grown'):
+    os.makedirs('../../logs/'+arg.arch+'_grown')
 if not os.path.exists('../plots/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init):
-    os.makedirs('../plots/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init)
+    os.makedirs('../../plots/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init)
 
 # Logger Setting
 logger = logging.getLogger('netlog')
@@ -87,7 +87,7 @@ Z = tf.placeholder(tf.float32,[None,1])
 G_sample = generator(Z, arch = arg.arch)
 # Z_batch = np.ones((1,1)) #np.random.uniform(-1., 1., size=[1, 1]) REMOVE LATER
 
-old_model_location = '../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'/model'
+old_model_location = '../../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'/model'
 saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Generator"))
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
@@ -228,10 +228,10 @@ with tf.Session(config = config) as sess:
             plt.ylabel('y')
             plt.title('Swiss Roll Data')
             plt.tight_layout()
-            plt.savefig('../plots/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'/iteration_%i.png'%i)
+            plt.savefig('../../plots/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'/iteration_%i.png'%i)
             plt.close()
 
 
 
-saver.save(sess, '../models/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'/model')
+saver.save(sess, '../../models/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'/model')
 
