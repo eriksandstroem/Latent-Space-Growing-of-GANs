@@ -211,16 +211,6 @@ with tf.Session(config = config) as sess:
         X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
         Z_batch = sample_Z(arg.batchSize, arg.zdim, arg.z)
 
-        for _ in range(nd_steps):
-            _, dloss = sess.run([disc_step, disc_loss], feed_dict={X: X_batch, Z: Z_batch})
-
-        for _ in range(ng_steps):
-            _, gloss = sess.run([gen_step, gen_loss], feed_dict={Z: Z_batch})
-
-
-        if i%50 == 0:
-            logger.info('==>>> iteration:{}, g loss:{}, d loss:{}'.format(i, gloss, dloss))
-
         if i%1000 == 0:
             g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
 
@@ -235,6 +225,17 @@ with tf.Session(config = config) as sess:
             plt.tight_layout()
             plt.savefig('../../plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i)
             plt.close()
+
+        for _ in range(nd_steps):
+            _, dloss = sess.run([disc_step, disc_loss], feed_dict={X: X_batch, Z: Z_batch})
+
+        for _ in range(ng_steps):
+            _, gloss = sess.run([gen_step, gen_loss], feed_dict={Z: Z_batch})
+
+
+        if i%50 == 0:
+            logger.info('==>>> iteration:{}, g loss:{}, d loss:{}'.format(i, gloss, dloss))
+
 
     saver.save(sess, '../../models/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/model')
 

@@ -65,9 +65,9 @@ if arg.gflag == 'grown':
 	xaxis = np.arange(0,(len(x)-13)*50,50)
 
 else:
-	d_loss = np.zeros(len(x)-10)
-	g_loss = np.zeros(len(x)-10)
-	for idx, line in enumerate(x[10:]):
+	d_loss = np.zeros(len(x)-11)
+	g_loss = np.zeros(len(x)-11)
+	for idx, line in enumerate(x[11:]):
 		split = line.split(' ')
 		d = split[-1]
 		g = split[-3]
@@ -75,7 +75,7 @@ else:
 		g_loss[idx] = float(g[5:-1])
 
 
-	xaxis = np.arange(0,(len(x)-10)*50,50)
+	xaxis = np.arange(0,(len(x)-11)*50,50)
 # plot data
 plt.figure()
 plt.grid(True)

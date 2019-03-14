@@ -16,7 +16,7 @@ parser.add_argument('--gpu', default=1, type=int, help='epochs (default: 1)')
 parser.add_argument('--batchSize', default=128, type=int, help='batch size (default: 128)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='learning rate (default: 0.001)')
 parser.add_argument('--tn', '--train_noise', default=0.0, type=float, help='train noise std (default: 0.0)')
-parser.add_argument('--i', '--iterations', default=30050, type=int, help='iterations (default: 30 050)')
+parser.add_argument('--i', '--iterations', default=15050, type=int, help='iterations (default: 15 050)')
 parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
 parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
 parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
@@ -200,6 +200,21 @@ for i in range(arg.i):
     X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
     Z_batch = sample_Z(arg.batchSize, arg.zdim, arg.z)
 
+    if i%1000 == 0:
+    g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
+
+    plt.figure()
+    plt.grid(True)
+    xax = plt.scatter(x_plot[:,0],x_plot[:,1])
+    gax = plt.scatter(g_plot[:,0], g_plot[:,1])
+    plt.legend((xax,gax), ("Real Data", "Generated Data"))
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title('Swiss Roll Data')
+    plt.tight_layout()
+    plt.savefig('../../plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/iteration_%i.png'%i)
+    plt.close()
+
     for _ in range(nd_steps):
         _, dloss = sess.run([disc_step, disc_loss], feed_dict={X: X_batch, Z: Z_batch})
 
@@ -209,21 +224,6 @@ for i in range(arg.i):
     
     if i%50 == 0:
         logger.info('==>>> iteration:{}, g loss:{}, d loss:{}'.format(i, gloss, dloss))
-
-    if i%1000 == 0:
-        g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
-
-        plt.figure()
-        plt.grid(True)
-        xax = plt.scatter(x_plot[:,0],x_plot[:,1])
-        gax = plt.scatter(g_plot[:,0], g_plot[:,1])
-        plt.legend((xax,gax), ("Real Data", "Generated Data"))
-        plt.xlabel('x')
-        plt.ylabel('y')
-        plt.title('Swiss Roll Data')
-        plt.tight_layout()
-        plt.savefig('../../plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/iteration_%i.png'%i)
-        plt.close()
 
 
 
