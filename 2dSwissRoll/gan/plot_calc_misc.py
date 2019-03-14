@@ -15,8 +15,9 @@ parser = argparse.ArgumentParser(description='Plot Loss function')
 parser.add_argument('--gpu', default=1, type=int, help='epochs (default: 1)')
 parser.add_argument('--batchSize', default=128, type=int, help='batch size (default: 128)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='learning rate (default: 0.001)')
-parser.add_argument('--n', '--noise', default=0.0, type=float, help='noise std (default: 0.0)')
-parser.add_argument('--i', '--iterations', default=30000, type=int, help='iterations (default: 30 000)')
+parser.add_argument('--tn', '--train_noise', default=0.0, choices=[0.0, 0.5], type=float, help='training noise std (default: 0.0)')
+parser.add_argument('--ptn', '--pretrain_noise', default=0.0, choices=[0.0, 0.5], type=float, help='pretrained noise (default: 0.0)')
+parser.add_argument('--i', '--iterations', default=10050, type=int, help='iterations (default: 10 050)')
 parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
 parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
 parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
@@ -26,30 +27,55 @@ parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2
 # notation: a.b = #hidden layers.#neurons per layer
 parser.add_argument('--arch', '--architecture', default='2.16', help="architecture (default: 2.16)")
 parser.add_argument('--l', '--loss', default='wa', choices=['ns', 'wa'], help="loss function (default: wa)")
+parser.add_argument('--init', '--initialization', default='z', choices=['z', 'n', 'u'], help="growth initialization (default: z)")
+parser.add_argument('--a', '--activation', default='lre', help="activation (default: leaky relu)")
+parser.add_argument('--gflag', '--growflag', default='', choices=['', 'grown'], help="grow or not grow (default: not grown)")
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../loss_plots/'+arg.arch):
-    os.makedirs('../loss_plots/'+arg.arch)
-if not os.path.exists('../grid_plots/'+arg.arch):
-    os.makedirs('../grid_plots/'+arg.arch)
+if arg.gflag == 'grown':
+	if not os.path.exists('../../loss_plots/'+arg.arch+'_grown'):
+	    os.makedirs('../../loss_plots/'+arg.arch+'_grown')
+	if not os.path.exists('../../grid_plots/'+arg.arch+'_grown'):
+	    os.makedirs('../../grid_plots/'+arg.arch+'_grown')
+else:
+	if not os.path.exists('../../loss_plots/'+arg.arch):
+	    os.makedirs('../../loss_plots/'+arg.arch)
+	if not os.path.exists('../../grid_plots/'+arg.arch):
+	    os.makedirs('../../grid_plots/'+arg.arch)
 
 # retrieve data from log file
-location = '../logs/'+arg.arch+'/log_n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.log'
+if arg.gflag == 'grown':
+	location = '../../logs/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.log'
+else:
+	location = '../../logs/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log'
 f  = open(location, "r")
 x = f.readlines()
-d_loss = np.zeros(len(x)-10)
-g_loss = np.zeros(len(x)-10)
-for idx, line in enumerate(x[10:]):
-	split = line.split(' ')
-	d = split[-1]
-	g = split[-3]
-	d_loss[idx] = float(d[5:])
-	g_loss[idx] = float(g[5:-1])
+if arg.gflag == 'grown':
+	d_loss = np.zeros(len(x)-13)
+	g_loss = np.zeros(len(x)-13)
+	for idx, line in enumerate(x[13:]):
+		split = line.split(' ')
+		d = split[-1]
+		g = split[-3]
+		d_loss[idx] = float(d[5:])
+		g_loss[idx] = float(g[5:-1])
 
 
+	xaxis = np.arange(0,(len(x)-13)*50,50)
 
-xaxis = np.arange(0,(len(x)-10)*50,50)
+else:
+	d_loss = np.zeros(len(x)-10)
+	g_loss = np.zeros(len(x)-10)
+	for idx, line in enumerate(x[10:]):
+		split = line.split(' ')
+		d = split[-1]
+		g = split[-3]
+		d_loss[idx] = float(d[5:])
+		g_loss[idx] = float(g[5:-1])
+
+
+	xaxis = np.arange(0,(len(x)-10)*50,50)
 # plot data
 plt.figure()
 plt.grid(True)
@@ -61,7 +87,11 @@ plt.plot(xaxis, d_loss,label = 'Discriminator Loss')
 plt.plot(xaxis, g_loss,label = 'Generator Loss')
 plt.legend()
 
-plt.savefig('../loss_plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.png')
+if arg.gflag == 'grown':
+	plt.savefig('../../loss_plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png')
+else:
+	plt.savefig('../../loss_plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.png')
+
 plt.close()
 
 
@@ -93,22 +123,40 @@ def discriminator(X,reuse=False, arch = '2.16'):
 X = tf.placeholder(tf.float32,[None,2])
 Z = tf.placeholder(tf.float32,[None,arg.zdim])
 
-G_sample = generator(Z)
-r_logits = discriminator(X)
-f_logits = discriminator(G_sample,reuse=True)
+G_sample = generator(Z, arch = arg.arch)
+r_logits = discriminator(X, arch = arg.arch)
+f_logits = discriminator(G_sample,reuse=True, arch = arg.arch)
 
 # initialize all variables
 init_op = tf.global_variables_initializer() # create the graph
 saver = tf.train.Saver() #pass list of old parameters in the parentethis later
 
-x_plot = sample_data_swissroll(n=500, noise = arg.n)
+x_plot = sample_data_swissroll(n=500, noise = arg.tn)
 
 with tf.Session() as sess:
-	location = '../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'/model'
-	#sess.run(init_op)
+	if arg.gflag == 'grown':
+		location = '../../models/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/model'
+	else:
+		location = '../../models/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model'
+	sess.run(init_op)
+	reader = tf.train.NewCheckpointReader(location)
+	# create dictionary to restore all weights but the first layer weights
+	restore_dict = dict()
+	for v in tf.trainable_variables():
+		tensor_name = v.name.split(':')[0]
+		print('tensor name: ', tensor_name)
+		if reader.has_tensor(tensor_name):
+			print('to restore: yes')
+			restore_dict[tensor_name] = v
+		else:
+			print('to restore: no')
+
+	print(restore_dict)
+
+	print(tf.trainable_variables())
 	saver.restore(sess, location)
 
-	X_batch = sample_data_swissroll(n=500, noise = arg.n)
+	X_batch = sample_data_swissroll(n=500, noise = arg.tn)
 	if arg.zdim == 2:
 		Z_batch = np.mgrid[-1:1:0.01, -1:1:0.01].reshape(2,-1).T
 	elif arg.zdim == 1:
@@ -173,6 +221,8 @@ with tf.Session() as sess:
 	textstr = 'D_r avg:'+str(mean_prob_d)[:-4]+'    D_f avg:'+str(mean_prob_g)[:-4]
 	plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
 	fig.subplots_adjust(left=0.3, bottom=0.13)
-	fig.savefig('../grid_plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.png', bbox_inches='tight')
-
+	if arg.gflag == 'grown':
+		fig.savefig('../../grid_plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png', bbox_inches='tight')
+	else:
+		fig.savefig('../../grid_plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.png', bbox_inches='tight')
 
