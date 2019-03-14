@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description='Tensorflow Training')
 parser.add_argument('--gpu', default=1, type=int, help='epochs (default: 1)')
 parser.add_argument('--batchSize', default=128, type=int, help='batch size (default: 128)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='learning rate (default: 0.001)')
-parser.add_argument('--n', '--noise', default=0.0, type=float, help='noise std (default: 0.0)')
+parser.add_argument('--tn', '--train_noise', default=0.0, type=float, help='train noise std (default: 0.0)')
 parser.add_argument('--i', '--iterations', default=30050, type=int, help='iterations (default: 30 050)')
 parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
 parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
@@ -30,24 +30,24 @@ parser.add_argument('--a', '--activation', default='lre', help="activation (defa
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
-    os.makedirs('../../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
+if not os.path.exists('../../models/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
+    os.makedirs('../../models/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
 if not os.path.exists('../../logs/'+arg.arch):
     os.makedirs('../../logs/'+arg.arch)
-if not os.path.exists('../../plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
-    os.makedirs('../../plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
+if not os.path.exists('../../plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
+    os.makedirs('../../plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
 
 # Logger Setting
 logger = logging.getLogger('netlog')
 logger.setLevel(logging.INFO)
-ch = logging.FileHandler('../../logs/'+arg.arch+'/log_n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log')
+ch = logging.FileHandler('../../logs/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log')
 ch.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.info("================================================")
 logger.info("Learning Rate: {}".format(arg.lr))
-logger.info("Noise: {}".format(arg.n))
+logger.info("Train Noise: {}".format(arg.tn))
 logger.info("Iterations: {}".format(arg.i))
 logger.info("Architecture: "+arg.arch)
 logger.info("Batch Size: {}".format(arg.batchSize))
@@ -184,7 +184,6 @@ if arg.opt == 'ad':
 # include saver
 saver = tf.train.Saver()
 
-config = tf.ConfigProto(device_count = {'GPU': arg.gpu+1})
 # The config for GPU usage
 config = tf.ConfigProto()
 config.gpu_options.visible_device_list=str(arg.gpu)
@@ -195,10 +194,10 @@ tf.global_variables_initializer().run(session=sess)
 nd_steps = 10
 ng_steps = 10
 
-x_plot = sample_data_swissroll(n=arg.batchSize, noise = arg.n)
+x_plot = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
 
 for i in range(arg.i):
-    X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.n)
+    X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
     Z_batch = sample_Z(arg.batchSize, arg.zdim, arg.z)
 
     for _ in range(nd_steps):
@@ -223,10 +222,10 @@ for i in range(arg.i):
         plt.ylabel('y')
         plt.title('Swiss Roll Data')
         plt.tight_layout()
-        plt.savefig('../../plots/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/iteration_%i.png'%i)
+        plt.savefig('../../plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/iteration_%i.png'%i)
         plt.close()
 
 
 
-saver.save(sess, '../../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model')
+saver.save(sess, '../../models/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model')
 sess.close()

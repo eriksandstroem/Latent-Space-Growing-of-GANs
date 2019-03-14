@@ -13,8 +13,9 @@ parser = argparse.ArgumentParser(description='Plot Loss function')
 parser.add_argument('--gpu', default=1, type=int, help='epochs (default: 1)')
 parser.add_argument('--batchSize', default=128, type=int, help='batch size (default: 128)')
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='learning rate (default: 0.001)')
-parser.add_argument('--n', '--noise', default=0.0, type=float, help='noise std (default: 0.0)')
-parser.add_argument('--i', '--iterations', default=30050, type=int, help='iterations (default: 30 050)')
+parser.add_argument('--tn', '--train_noise', default=0.0, choices=[0.0, 0.5], type=float, help='training noise std (default: 0.0)')
+parser.add_argument('--ptn', '--pretrain_noise', default=0.0, choices=[0.0, 0.5], type=float, help='pretrained noise (default: 0.0)')
+parser.add_argument('--i', '--iterations', default=10050, type=int, help='iterations (default: 10 050)')
 parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
 parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
 parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
@@ -29,24 +30,25 @@ parser.add_argument('--a', '--activation', default='lre', help="activation (defa
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../../models/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init):
-    os.makedirs('../../models/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init)
+if not os.path.exists('../../models/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)):
+    os.makedirs('../../models/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn))
 if not os.path.exists('../../logs/'+arg.arch+'_grown'):
     os.makedirs('../../logs/'+arg.arch+'_grown')
-if not os.path.exists('../plots/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init):
-    os.makedirs('../../plots/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init)
+if not os.path.exists('../../plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)):
+    os.makedirs('../../plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn))
 
 # Logger Setting
 logger = logging.getLogger('netlog')
 logger.setLevel(logging.INFO)
-ch = logging.FileHandler('../logs/'+arg.arch+'grown/log_n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'.log')
+ch = logging.FileHandler('../../logs/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.log')
 ch.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 logger.info("================================================")
 logger.info("Learning Rate: {}".format(arg.lr))
-logger.info("Noise: {}".format(arg.n))
+logger.info("Train Noise: {}".format(arg.tn))
+logger.info("Pre-Train Noise: {}".format(arg.ptn))
 logger.info("Iterations: {}".format(arg.i))
 logger.info("Architecture: "+arg.arch)
 logger.info("Batch Size: {}".format(arg.batchSize))
@@ -58,6 +60,10 @@ logger.info("Growth Initializer: "+arg.init)
 logger.info("Activation Function: "+arg.a)
 
 sb.set()
+
+# The config for GPU usage
+config = tf.ConfigProto()
+config.gpu_options.visible_device_list=str(arg.gpu)
 
 # define the graph
 def generator(Z,reuse=False, arch = '2.16'):
@@ -87,9 +93,9 @@ Z = tf.placeholder(tf.float32,[None,1])
 G_sample = generator(Z, arch = arg.arch)
 # Z_batch = np.ones((1,1)) #np.random.uniform(-1., 1., size=[1, 1]) REMOVE LATER
 
-old_model_location = '../../models/'+arg.arch+'/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'/model'
+old_model_location = '../../models/'+arg.arch+'/TN'+str(arg.ptn)+'_Lr'+str(arg.lr)+'_D'+str(1)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model'
 saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Generator"))
-with tf.Session() as sess:
+with tf.Session(config = config) as sess:
     sess.run(tf.global_variables_initializer())
     saver.restore(sess, old_model_location) 
     biash1_old = sess.run(tf.get_default_graph().get_tensor_by_name("GAN/Generator/h1/bias:0")) 
@@ -160,7 +166,7 @@ restore_dict = dict()
 for v in tf.trainable_variables():
     tensor_name = v.name.split(':')[0]
     print('tensor name: ', tensor_name)
-    if reader.has_tensor(tensor_name) and 'h1' not in tensor_name:
+    if reader.has_tensor(tensor_name) and 'Generator/h1' not in tensor_name:
         print('to restore: yes')
         restore_dict[tensor_name] = v
     else:
@@ -169,9 +175,7 @@ for v in tf.trainable_variables():
 nd_steps = 10
 ng_steps = 10
 
-x_plot = sample_data_swissroll(n=arg.batchSize, noise = arg.n)
-
-config = tf.ConfigProto(device_count = {'GPU': arg.gpu+1})
+x_plot = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
 
 # architecture
 arch = arg.arch.split('.')
@@ -194,6 +198,7 @@ with tf.Session(config = config) as sess:
     sess.run(assign_opbias)   
     sess.run(assign_opbias)
     sess.run(assign_opkernel)
+    saver = tf.train.Saver()
     # print('GAN/Generator/h1/bias:0 new:', sess.run(biash1)) # REMOVE LATER
     # print('GAN/Generator/h1/kernel:0 new:', sess.run(kernelh1)) # REMOVE LATER
     # biash2 = sess.run(tf.get_default_graph().get_tensor_by_name("GAN/Generator/h2/bias:0")) # REMOVE LATER
@@ -203,7 +208,7 @@ with tf.Session(config = config) as sess:
     # print('G_sample new: ', sess.run([G_sample], feed_dict={Z: Z_batch})) # REMOVE LATER
 
     for i in range(arg.i):
-        X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.n)
+        X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
         Z_batch = sample_Z(arg.batchSize, arg.zdim, arg.z)
 
         for _ in range(nd_steps):
@@ -228,10 +233,8 @@ with tf.Session(config = config) as sess:
             plt.ylabel('y')
             plt.title('Swiss Roll Data')
             plt.tight_layout()
-            plt.savefig('../../plots/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'/iteration_%i.png'%i)
+            plt.savefig('../../plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i)
             plt.close()
 
-
-
-saver.save(sess, '../../models/'+arg.arch+'_grown/n'+str(arg.n)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'/model')
+    saver.save(sess, '../../models/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/model')
 
