@@ -26,21 +26,22 @@ parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2
 # notation: a.b = #hidden layers.#neurons per layer
 parser.add_argument('--arch', '--architecture', default='2.16', help="architecture (default: 2.16)")
 parser.add_argument('--l', '--loss', default='wa', choices=['ns', 'wa'], help="loss function (default: wa)")
+parser.add_argument('--d', '--dataset', default='standard', choices=['standard', 'sinus_single', 'sinus_double'], help="dataset (default: standard)")
 parser.add_argument('--a', '--activation', default='lre', help="activation (default: leaky relu)")
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../../models/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
-    os.makedirs('../../models/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
-if not os.path.exists('../../logs/'+arg.arch):
-    os.makedirs('../../logs/'+arg.arch)
-if not os.path.exists('../../plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
-    os.makedirs('../../plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
+if not os.path.exists('../../models/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
+    os.makedirs('../../models/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
+if not os.path.exists('../../logs/'+arg.d+'/'+arg.arch):
+    os.makedirs('../../logs/'+arg.d+'/'+arg.arch)
+if not os.path.exists('../../plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a):
+    os.makedirs('../../plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a)
 
 # Logger Setting
 logger = logging.getLogger('netlog')
 logger.setLevel(logging.INFO)
-ch = logging.FileHandler('../../logs/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log')
+ch = logging.FileHandler('../../logs/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log')
 ch.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
@@ -70,31 +71,7 @@ def generator(Z,reuse=False, arch = '2.16'):
             Z = h
         out = tf.layers.dense(h,2, name ='out')
     return out
-# def generator(Z,reuse=False):
-#     if arg.g == '2.16':
-#         with tf.variable_scope("GAN/Generator",reuse=reuse):
-#             h1 = tf.layers.dense(Z,16,activation=tf.nn.leaky_relu)
-#             h2 = tf.layers.dense(h1,16,activation=tf.nn.leaky_relu)
-#             out = tf.layers.dense(h2,2)
 
-#         return out
-#     elif arg.g == '3.2':
-#         with tf.variable_scope("GAN/Generator",reuse=reuse):
-#             h1 = tf.layers.dense(Z,2,activation=tf.nn.leaky_relu)
-#             h2 = tf.layers.dense(h1,2,activation=tf.nn.leaky_relu)
-#             h3 = tf.layers.dense(h2,2,activation=tf.nn.leaky_relu)
-#             out = tf.layers.dense(h3,2)
-
-#         return out
-
-#     elif arg.g == '3.8':
-#         with tf.variable_scope("GAN/Generator",reuse=reuse):
-#             h1 = tf.layers.dense(Z,8,activation=tf.nn.leaky_relu)
-#             h2 = tf.layers.dense(h1,8,activation=tf.nn.leaky_relu)
-#             h3 = tf.layers.dense(h2,8,activation=tf.nn.leaky_relu)
-#             out = tf.layers.dense(h3,2)
-
-#         return out
 def discriminator(X,reuse=False, arch = '2.16'):
     arch = arch.split('.')
     layers = int(arch[0])
@@ -105,33 +82,6 @@ def discriminator(X,reuse=False, arch = '2.16'):
             X = h
         out = tf.layers.dense(h,1, name = 'out')
     return out
-# def discriminator(X,reuse=False):
-#     if arg.d == '2.16':
-#         with tf.variable_scope("GAN/Discriminator",reuse=reuse):
-#             h1 = tf.layers.dense(X,16,activation=tf.nn.leaky_relu)
-#             h2 = tf.layers.dense(h1,16,activation=tf.nn.leaky_relu)
-#             out = tf.layers.dense(h2,1)
-
-#         return out
-
-#     elif arg.d == '3.2':
-#         with tf.variable_scope("GAN/Discriminator",reuse=reuse):
-#             h1 = tf.layers.dense(X,2,activation=tf.nn.leaky_relu)
-#             h2 = tf.layers.dense(h1,2,activation=tf.nn.leaky_relu)
-#             h3 = tf.layers.dense(h2,2,activation=tf.nn.leaky_relu)
-#             out = tf.layers.dense(h3,1)
-
-#         return out
-
-#     elif arg.d == '3.8':
-#         with tf.variable_scope("GAN/Discriminator",reuse=reuse):
-#             h1 = tf.layers.dense(X,8,activation=tf.nn.leaky_relu)
-#             h2 = tf.layers.dense(h1,8,activation=tf.nn.leaky_relu)
-#             h3 = tf.layers.dense(h2,8,activation=tf.nn.leaky_relu)
-#             out = tf.layers.dense(h3,1)
-
-#         return out
-
 
 X = tf.placeholder(tf.float32,[None,2])
 Z = tf.placeholder(tf.float32,[None,arg.zdim])
@@ -142,8 +92,8 @@ f_logits = discriminator(G_sample,reuse=True, arch = arg.arch)
 
 
 if arg.l == 'ns':
-    disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=r_logits,labels=tf.zeros_like(r_logits)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.ones_like(f_logits)))
-    gen_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.zeros_like(f_logits)))
+    disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=r_logits,labels=tf.ones_like(r_logits)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.zeros_like(f_logits)))
+    gen_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.ones_like(f_logits)))
 elif arg.l == 'wa':
     hyperparameter = 10
     alpha = tf.random_uniform(shape=[arg.batchSize,1,1,1],minval=0., maxval=1.)
@@ -194,14 +144,24 @@ tf.global_variables_initializer().run(session=sess)
 nd_steps = 10
 ng_steps = 10
 
-x_plot = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
+if arg.d == 'standard':
+    x_plot = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
+elif arg.d == 'sinus_single':
+    x_plot = sample_data_sinus_swissroll(n=arg.batchSize, noise = arg.tn, arch = 'single')
+elif arg.d == 'sinus_double':
+    x_plot = sample_data_sinus_swissroll(n=arg.batchSize, noise = arg.tn, arch = 'double')
 
 for i in range(arg.i):
-    X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
+    if arg.d = 'standard':
+        X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
+    elif arg.d = 'sinus_single':
+        X_batch = sample_data_sinus_swissroll(n=arg.batchSize, noise = arg.tn, arch = 'single')
+    elif arg.d = 'sinus_double':
+        X_batch = sample_data_sinus_swissroll(n=arg.batchSize, noise = arg.tn, arch = 'double')
     Z_batch = sample_Z(arg.batchSize, arg.zdim, arg.z)
 
     if i%1000 == 0:
-    g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
+        g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
 
     plt.figure()
     plt.grid(True)
@@ -212,7 +172,7 @@ for i in range(arg.i):
     plt.ylabel('y')
     plt.title('Swiss Roll Data')
     plt.tight_layout()
-    plt.savefig('../../plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/iteration_%i.png'%i)
+    plt.savefig('../../plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/iteration_%i.png'%i)
     plt.close()
 
     for _ in range(nd_steps):
@@ -227,5 +187,5 @@ for i in range(arg.i):
 
 
 
-saver.save(sess, '../../models/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model')
+saver.save(sess, '../../models/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model')
 sess.close()

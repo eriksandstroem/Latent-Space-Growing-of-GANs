@@ -7,6 +7,9 @@ import time
 import os
 import argparse
 import logging
+import matplotlib.ticker as plticker
+from mpl_toolkits.axes_grid1.inset_locator import InsetPosition
+plt.viridis()
 
 # -------------- plot loss function of discriminator and generator --------------
 parser = argparse.ArgumentParser(description='Plot Loss function')
@@ -15,7 +18,7 @@ parser.add_argument('--batchSize', default=128, type=int, help='batch size (defa
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='learning rate (default: 0.001)')
 parser.add_argument('--tn', '--train_noise', default=0.0, choices=[0.0, 0.5], type=float, help='training noise std (default: 0.0)')
 parser.add_argument('--ptn', '--pretrain_noise', default=0.0, choices=[0.0, 0.5], type=float, help='pretrained noise (default: 0.0)')
-parser.add_argument('--i', '--iterations', default=10050, type=int, help='iterations (default: 10 050)')
+parser.add_argument('--i', '--iterations', default=1050, type=int, help='iterations (default: 10 050)')
 parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
 parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
 parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
@@ -25,22 +28,28 @@ parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2
 # notation: a.b = #hidden layers.#neurons per layer
 parser.add_argument('--arch', '--architecture', default='2.16', help="architecture (default: 2.16)")
 parser.add_argument('--l', '--loss', default='wa', choices=['ns', 'wa'], help="loss function (default: wa)")
-parser.add_argument('--init', '--initialization', default='z', choices=['z', 'n', 'u'], help="growth initialization (default: z)")
+parser.add_argument('--init', '--initialization', default='z', choices=['z', 'n', 'u','x'], help="growth initialization (default: z)")
+parser.add_argument('--d', '--dataset', default='standard', choices=['standard', 'sinus_single', 'sinus_double'], help="dataset (default: standard)")
+parser.add_argument('--advplot', '--advanced_plot', default='standard', choices=['standard', 'advanced'], help="advanced plotting flag (default: standard)")
 parser.add_argument('--a', '--activation', default='lre', help="activation (default: leaky relu)")
 arg = parser.parse_args()
 
 # create model directory to store/load old model
-if not os.path.exists('../../models/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)):
-    os.makedirs('../../models/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn))
-if not os.path.exists('../../logs/'+arg.arch+'_grown'):
-    os.makedirs('../../logs/'+arg.arch+'_grown')
-if not os.path.exists('../../plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)):
-    os.makedirs('../../plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn))
+if not os.path.exists('../../models/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)):
+    os.makedirs('../../models/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn))
+if not os.path.exists('../../logs/'+arg.d+'/'+arg.arch+'_grown'):
+    os.makedirs('../../logs/'+arg.d+'/'+arg.arch+'_grown')
+if not os.path.exists('../../plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)):
+    os.makedirs('../../plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn))
+
+if arg.advplot == 'advanced':
+    if not os.path.exists('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)):
+        os.makedirs('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn))
 
 # Logger Setting
 logger = logging.getLogger('netlog')
 logger.setLevel(logging.INFO)
-ch = logging.FileHandler('../../logs/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.log')
+ch = logging.FileHandler('../../logs/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.log')
 ch.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
@@ -59,7 +68,6 @@ logger.info("Optimizer: "+arg.opt)
 logger.info("Growth Initializer: "+arg.init)
 logger.info("Activation Function: "+arg.a)
 
-sb.set()
 
 # The config for GPU usage
 config = tf.ConfigProto()
@@ -93,7 +101,7 @@ Z = tf.placeholder(tf.float32,[None,1])
 G_sample = generator(Z, arch = arg.arch)
 # Z_batch = np.ones((1,1)) #np.random.uniform(-1., 1., size=[1, 1]) REMOVE LATER
 
-old_model_location = '../../models/'+arg.arch+'/TN'+str(arg.ptn)+'_Lr'+str(arg.lr)+'_D'+str(1)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model'
+old_model_location = '../../models/'+arg.d+'/'+arg.arch+'/TN'+str(arg.ptn)+'_Lr'+str(arg.lr)+'_D'+str(1)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model'
 saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Generator"))
 with tf.Session(config = config) as sess:
     sess.run(tf.global_variables_initializer())
@@ -118,8 +126,8 @@ f_logits = discriminator(G_sample,reuse=True, arch = arg.arch)
 
 # specify loss function
 if arg.l == 'ns':
-    disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=r_logits,labels=tf.zeros_like(r_logits)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.ones_like(f_logits)))
-    gen_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.zeros_like(f_logits)))
+    disc_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=r_logits,labels=tf.ones_like(r_logits)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.zeros_like(f_logits)))
+    gen_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=f_logits,labels=tf.ones_like(f_logits)))
 elif arg.l == 'wa':
     hyperparameter = 10
     alpha = tf.random_uniform(shape=[arg.batchSize,1,1,1],minval=0., maxval=1.)
@@ -195,6 +203,9 @@ with tf.Session(config = config) as sess:
         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.random.normal(0,0.01,(1,nodes)))])) # experiment with different std
     elif arg.init == 'u':
         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.random.uniform(-0.1,0.1,(1,nodes)))])) # experiment with different range
+    elif arg.init == 'x':
+        limit = np.sqrt(6/(2+nodes))
+        assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.random.uniform(-limit,limit,(1,nodes)))]))
     sess.run(assign_opbias)   
     sess.run(assign_opbias)
     sess.run(assign_opkernel)
@@ -208,10 +219,15 @@ with tf.Session(config = config) as sess:
     # print('G_sample new: ', sess.run([G_sample], feed_dict={Z: Z_batch})) # REMOVE LATER
 
     for i in range(arg.i):
-        X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
+        if arg.d == 'standard':
+            X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
+        elif arg.d == 'sinus_single':
+            X_batch = sample_data_sinus_swissroll(n=arg.batchSize, noise = arg.tn, arch = 'single')
+        elif arg.d == 'sinus_double':
+            X_batch = sample_data_sinus_swissroll(n=arg.batchSize, noise = arg.tn, arch = 'double')
         Z_batch = sample_Z(arg.batchSize, arg.zdim, arg.z)
 
-        if i%1000 == 0:
+        if arg.advplot == 'standard' and i%1000 == 0:
             g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
 
             plt.figure()
@@ -223,8 +239,84 @@ with tf.Session(config = config) as sess:
             plt.ylabel('y')
             plt.title('Swiss Roll Data')
             plt.tight_layout()
-            plt.savefig('../../plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i)
+            plt.savefig('../../plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i)
             plt.close()
+        if arg.advplot == 'advanced' and i%100 == 0:
+            if arg.zdim == 2:
+                Z_dense = np.mgrid[-1:1:0.01, -1:1:0.01].reshape(2,-1).T
+            elif arg.zdim == 1:
+                Z_dense = np.arange(-1,1.01,0.01)
+                Z_dense = np.reshape(Z_batch_dense,(len(Z_dense),1))
+            X_dense = np.mgrid[-15:15.06:0.05, -15:15.06:0.05].reshape(2,-1).T
+
+            d_logits_dense = sess.run(r_logits, feed_dict={X: X_dense})
+            d_logits = sess.run(r_logits, feed_dict={X: X_batch})
+            g_logits = sess.run(f_logits, feed_dict={Z: Z_dense})
+            print('iteration: ', i)
+            print('max: ', max(d_logits_dense))
+            print('min: ', min(d_logits_dense))
+            d_prob_dense = 1/(1+np.exp(-d_logits_dense))
+            d_prob = 1/(1+np.exp(-d_logits))
+            g_prob = 1/(1+np.exp(-g_logits))
+            mean_prob_d = np.mean(d_prob)
+            mean_prob_g = np.mean(g_prob)
+
+            g_plot = sess.run(G_sample, feed_dict={Z: Z_dense})
+            x_plot = X_batch
+
+            fig, (ax0, ax1, ax2, cax) = plt.subplots(ncols=4, figsize=(40,7))
+            fig.subplots_adjust(wspace=0.2)
+            ax1.grid(True)
+            x1 = np.reshape(x_plot[:,0],(arg.batchSize,1))
+            x2 = np.reshape(x_plot[:,1],(arg.batchSize,1))
+            g1 = np.reshape(g_plot[:,0],(len(g_plot),1))
+            g2 = np.reshape(g_plot[:,1],(len(g_plot),1))
+            cd = np.reshape(d_prob,(arg.batchSize,1))
+            cg = np.reshape(g_prob,(len(g_plot),1))
+            cd_dense = np.reshape(d_prob_dense,(len(d_prob_dense),1))
+            if arg.zdim == 2:
+                gax = ax1.scatter(g1, g2, c = cg, marker='.',s=2)
+            elif arg.zdim == 1:
+                gax = ax1.scatter(g1, g2, c = cg, marker='.',s=20)
+                
+            xax = ax1.scatter(x1,x2, c = cd, marker='x')
+            ax1.legend((xax,gax), ("Real Data", "Generated Data"))
+            ax1.set_title('Sample Space')
+
+            if arg.zdim == 2:
+                z1 = np.reshape(Z_dense[:,0],(len(Z_dense),1))
+                z2 = np.reshape(Z_dense[:,1],(len(Z_dense),1))
+                ax2.scatter(z1, z2, c = cg, marker='.',s=10)
+            elif arg.zdim == 1:
+                z1 = Z_dense
+                ax2.scatter(z1, np.zeros(len(Z_dense)) ,c = cg, marker = '.', s=30)
+
+            ax2.set_title('Latent Space')
+
+            loc = plticker.MultipleLocator(base=1.0)
+            ax2.xaxis.set_major_locator(loc)
+            ax2.yaxis.set_major_locator(loc)
+
+            ip = InsetPosition(ax2, [1.05,0,0.05,1]) 
+            cax.set_axes_locator(ip)
+
+            x1_dense = np.reshape(X_dense[:,0],(len(X_dense),1))
+            x2_dense = np.reshape(X_dense[:,1],(len(X_dense),1))
+            ax0.scatter(x1_dense, x2_dense, c = cd_dense, marker='.',s=1)
+
+            ax0.set_title('Sample Space')
+            fig.suptitle('Dense 2D Uniform Sampling', fontsize=16)
+
+            ax0.xaxis.set_ticks(np.arange(-15,15,5))
+            ax0.yaxis.set_ticks(np.arange(-15,15,5))
+
+            fig.colorbar(gax, cax=cax, ax=[ax0,ax1,ax2])
+
+            textstr = 'D_r avg:'+str(mean_prob_d)[:-4]+'    D_f avg:'+str(mean_prob_g)[:-4]
+            plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
+            fig.subplots_adjust(left=0.3, bottom=0.13, wspace = 0.2)
+            
+            fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i, bbox_inches='tight')
 
         for _ in range(nd_steps):
             _, dloss = sess.run([disc_step, disc_loss], feed_dict={X: X_batch, Z: Z_batch})
@@ -237,5 +329,5 @@ with tf.Session(config = config) as sess:
             logger.info('==>>> iteration:{}, g loss:{}, d loss:{}'.format(i, gloss, dloss))
 
 
-    saver.save(sess, '../../models/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/model')
+    saver.save(sess, '../../models/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/model')
 

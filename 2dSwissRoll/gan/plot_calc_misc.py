@@ -27,28 +27,29 @@ parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2
 # notation: a.b = #hidden layers.#neurons per layer
 parser.add_argument('--arch', '--architecture', default='2.16', help="architecture (default: 2.16)")
 parser.add_argument('--l', '--loss', default='wa', choices=['ns', 'wa'], help="loss function (default: wa)")
-parser.add_argument('--init', '--initialization', default='z', choices=['z', 'n', 'u'], help="growth initialization (default: z)")
+parser.add_argument('--init', '--initialization', default='z', choices=['z', 'n', 'u', 'x'], help="growth initialization (default: z)")
 parser.add_argument('--a', '--activation', default='lre', help="activation (default: leaky relu)")
+parser.add_argument('--d', '--dataset', default='standard', choices=['standard', 'sinus_single', 'sinus_double'], help="dataset (default: standard)")
 parser.add_argument('--gflag', '--growflag', default='', choices=['', 'grown'], help="grow or not grow (default: not grown)")
 arg = parser.parse_args()
 
 # create model directory to store/load old model
 if arg.gflag == 'grown':
-	if not os.path.exists('../../loss_plots/'+arg.arch+'_grown'):
-	    os.makedirs('../../loss_plots/'+arg.arch+'_grown')
-	if not os.path.exists('../../grid_plots/'+arg.arch+'_grown'):
-	    os.makedirs('../../grid_plots/'+arg.arch+'_grown')
+	if not os.path.exists('../../loss_plots/'+arg.d+'/'+arg.arch+'_grown'):
+	    os.makedirs('../../loss_plots/'+arg.d+'/'+arg.arch+'_grown')
+	if not os.path.exists('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown'):
+	    os.makedirs('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown')
 else:
-	if not os.path.exists('../../loss_plots/'+arg.arch):
-	    os.makedirs('../../loss_plots/'+arg.arch)
-	if not os.path.exists('../../grid_plots/'+arg.arch):
-	    os.makedirs('../../grid_plots/'+arg.arch)
+	if not os.path.exists('../../loss_plots/'+arg.d+'/'+arg.arch):
+	    os.makedirs('../../loss_plots/'+arg.d+'/'+arg.arch)
+	if not os.path.exists('../../grid_plots/'+arg.d+'/'+arg.arch):
+	    os.makedirs('../../grid_plots/'+arg.d+'/'+arg.arch)
 
 # retrieve data from log file
 if arg.gflag == 'grown':
-	location = '../../logs/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.log'
+	location = '../../logs/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.log'
 else:
-	location = '../../logs/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log'
+	location = '../../logs/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log'
 f  = open(location, "r")
 x = f.readlines()
 if arg.gflag == 'grown':
@@ -88,9 +89,9 @@ plt.plot(xaxis, g_loss,label = 'Generator Loss')
 plt.legend()
 
 if arg.gflag == 'grown':
-	plt.savefig('../../loss_plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png')
+	plt.savefig('../../loss_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png')
 else:
-	plt.savefig('../../loss_plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.png')
+	plt.savefig('../../loss_plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.png')
 
 plt.close()
 
@@ -129,15 +130,13 @@ f_logits = discriminator(G_sample,reuse=True, arch = arg.arch)
 
 # initialize all variables
 init_op = tf.global_variables_initializer() # create the graph
-saver = tf.train.Saver() #pass list of old parameters in the parentethis later
-
-x_plot = sample_data_swissroll(n=500, noise = arg.tn)
+saver = tf.train.Saver() 
 
 with tf.Session() as sess:
 	if arg.gflag == 'grown':
-		location = '../../models/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/model'
+		location = '../../models/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/model'
 	else:
-		location = '../../models/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model'
+		location = '../../models/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/model'
 	sess.run(init_op)
 	reader = tf.train.NewCheckpointReader(location)
 	# create dictionary to restore all weights but the first layer weights
@@ -156,15 +155,24 @@ with tf.Session() as sess:
 	print(tf.trainable_variables())
 	saver.restore(sess, location)
 
-	X_batch = sample_data_swissroll(n=500, noise = arg.tn)
+	if arg.d == 'standard':
+		X_batch = sample_data_swissroll(n=500, noise = arg.tn)
+	elif arg.d == 'sinus_single':
+		X_batch = sample_data_sinus_swissroll(n=500, noise = arg.tn, arch = 'single')
+	elif arg.d == 'sinus_double':
+		X_batch = sample_data_sinus_swissroll(n=500, noise = arg.tn, arch = 'double')
+        
+	X_dense = np.mgrid[-15:15.06:0.05, -15:15.06:0.05].reshape(2,-1).T
 	if arg.zdim == 2:
 		Z_batch = np.mgrid[-1:1:0.01, -1:1:0.01].reshape(2,-1).T
 	elif arg.zdim == 1:
 		Z_batch = np.arange(-1,1.01,0.01)
 		Z_batch = np.reshape(Z_batch,(len(Z_batch),1))
 
+	d_logits_dense = sess.run(r_logits, feed_dict={X: X_dense})
 	d_logits = sess.run(r_logits, feed_dict={X: X_batch})
 	g_logits = sess.run(f_logits, feed_dict={Z: Z_batch})
+	d_prob_dense = 1/(1+np.exp(-d_logits_dense))
 	d_prob = 1/(1+np.exp(-d_logits))
 	g_prob = 1/(1+np.exp(-g_logits))
 	mean_prob_d = np.mean(d_prob)
@@ -175,8 +183,9 @@ with tf.Session() as sess:
 	# -------------- generate points sampled densly in a grid and plot results together with discriminator score as background --------------
 
 	g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
+	x_plot = X_batch
 
-	fig, (ax1, ax2, cax) = plt.subplots(ncols=3, figsize=(20,5))
+	fig, (ax0, ax1, ax2, cax) = plt.subplots(ncols=4, figsize=(40,7))
 	fig.subplots_adjust(wspace=0.2)
 	ax1.grid(True)
 	x1 = np.reshape(x_plot[:,0],(500,1))
@@ -185,6 +194,7 @@ with tf.Session() as sess:
 	g2 = np.reshape(g_plot[:,1],(len(g_plot),1))
 	cd = np.reshape(d_prob,(500,1))
 	cg = np.reshape(g_prob,(len(g_plot),1))
+	cd_dense = np.reshape(d_prob_dense,(len(d_prob_dense),1))
 	if arg.zdim == 2:
 		gax = ax1.scatter(g1, g2, c = cg, marker='.',s=2)
 	elif arg.zdim == 1:
@@ -192,22 +202,17 @@ with tf.Session() as sess:
 		
 	xax = ax1.scatter(x1,x2, c = cd, marker='x')
 	ax1.legend((xax,gax), ("Real Data", "Generated Data"))
-	ax1.set_xlabel('x')
-	ax1.set_ylabel('y')
 	ax1.set_title('Sample Space')
 
 	if arg.zdim == 2:
 		z1 = np.reshape(Z_batch[:,0],(len(Z_batch),1))
 		z2 = np.reshape(Z_batch[:,1],(len(Z_batch),1))
-		ax2.scatter(z1, z2, c = cg, marker='.',s=1)
+		ax2.scatter(z1, z2, c = cg, marker='.',s=10)
 	elif arg.zdim == 1:
 		z1 = Z_batch
 		ax2.scatter(z1, np.zeros(len(Z_batch)) ,c = cg, marker = '.', s=30)
 
-	ax2.set_xlabel('x')
-	ax2.set_ylabel('y')
 	ax2.set_title('Latent Space')
-	fig.suptitle('Dense 2D Uniform Sampling', fontsize=16)
 
 	loc = plticker.MultipleLocator(base=1.0)
 	ax2.xaxis.set_major_locator(loc)
@@ -216,13 +221,77 @@ with tf.Session() as sess:
 	ip = InsetPosition(ax2, [1.05,0,0.05,1]) 
 	cax.set_axes_locator(ip)
 
-	fig.colorbar(gax, cax=cax, ax=[ax1,ax2])
+	x1_dense = np.reshape(X_dense[:,0],(len(X_dense),1))
+	x2_dense = np.reshape(X_dense[:,1],(len(X_dense),1))
+	ax0.scatter(x1_dense, x2_dense, c = cd_dense, marker='.',s=1)
+
+	ax0.set_title('Sample Space')
+	fig.suptitle('Dense 2D Uniform Sampling', fontsize=16)
+
+	ax0.xaxis.set_ticks(np.arange(-15,15,5))
+	ax0.yaxis.set_ticks(np.arange(-15,15,5))
+
+	fig.colorbar(gax, cax=cax, ax=[ax0,ax1,ax2])
 
 	textstr = 'D_r avg:'+str(mean_prob_d)[:-4]+'    D_f avg:'+str(mean_prob_g)[:-4]
 	plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
-	fig.subplots_adjust(left=0.3, bottom=0.13)
+	fig.subplots_adjust(left=0.3, bottom=0.13, wspace = 0.2)
 	if arg.gflag == 'grown':
-		fig.savefig('../../grid_plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png', bbox_inches='tight')
+		fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png', bbox_inches='tight')
 	else:
-		fig.savefig('../../grid_plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.png', bbox_inches='tight')
+		fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.png', bbox_inches='tight')
 
+
+
+	# g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
+	# x_plot = X_batch
+
+	# fig, (ax1, ax2, cax) = plt.subplots(ncols=3, figsize=(20,5))
+	# fig.subplots_adjust(wspace=0.2)
+	# ax1.grid(True)
+	# x1 = np.reshape(x_plot[:,0],(500,1))
+	# x2 = np.reshape(x_plot[:,1],(500,1))
+	# g1 = np.reshape(g_plot[:,0],(len(g_plot),1))
+	# g2 = np.reshape(g_plot[:,1],(len(g_plot),1))
+	# cd = np.reshape(d_prob,(500,1))
+	# cg = np.reshape(g_prob,(len(g_plot),1))
+	# cd_dense = np.reshape(d_prob_dense,(len(d_prob_dense),1))
+	# if arg.zdim == 2:
+	# 	gax = ax1.scatter(g1, g2, c = cg, marker='.',s=2)
+	# elif arg.zdim == 1:
+	# 	gax = ax1.scatter(g1, g2, c = cg, marker='.',s=20)
+		
+	# xax = ax1.scatter(x1,x2, c = cd, marker='x')
+	# ax1.legend((xax,gax), ("Real Data", "Generated Data"))
+	# ax1.set_xlabel('x')
+	# ax1.set_ylabel('y')
+	# ax1.set_title('Sample Space')
+
+	# if arg.zdim == 2:
+	# 	z1 = np.reshape(Z_batch[:,0],(len(Z_batch),1))
+	# 	z2 = np.reshape(Z_batch[:,1],(len(Z_batch),1))
+	# 	ax2.scatter(z1, z2, c = cg, marker='.',s=1)
+	# elif arg.zdim == 1:
+	# 	z1 = Z_batch
+	# 	ax2.scatter(z1, np.zeros(len(Z_batch)) ,c = cg, marker = '.', s=30)
+
+	# ax2.set_xlabel('x')
+	# ax2.set_ylabel('y')
+	# ax2.set_title('Latent Space')
+
+	# loc = plticker.MultipleLocator(base=1.0)
+	# ax2.xaxis.set_major_locator(loc)
+	# ax2.yaxis.set_major_locator(loc)
+
+	# ip = InsetPosition(ax2, [1.05,0,0.05,1]) 
+	# cax.set_axes_locator(ip)
+
+	# fig.colorbar(gax, cax=cax, ax=[ax1,ax2])
+
+	# textstr = 'D_r avg:'+str(mean_prob_d)[:-4]+'    D_f avg:'+str(mean_prob_g)[:-4]
+	# plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
+	# fig.subplots_adjust(left=0.3, bottom=0.13)
+	# if arg.gflag == 'grown':
+	# 	fig.savefig('../../grid_plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png', bbox_inches='tight')
+	# else:
+	# 	fig.savefig('../../grid_plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.png', bbox_inches='tight')
