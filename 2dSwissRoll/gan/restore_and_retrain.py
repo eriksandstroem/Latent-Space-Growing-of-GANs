@@ -31,6 +31,7 @@ parser.add_argument('--l', '--loss', default='wa', choices=['ns', 'wa'], help="l
 parser.add_argument('--init', '--initialization', default='z', choices=['z', 'n', 'u','x'], help="growth initialization (default: z)")
 parser.add_argument('--d', '--dataset', default='standard', choices=['standard', 'sinus_single', 'sinus_double'], help="dataset (default: standard)")
 parser.add_argument('--advplot', '--advanced_plot', default='standard', choices=['standard', 'advanced'], help="advanced plotting flag (default: standard)")
+parser.add_argument('--w', '--wiggle_weights', default='no', choices=['no', 'yes'], help="wiggle weights flag (default: no)")
 parser.add_argument('--a', '--activation', default='lre', help="activation (default: leaky relu)")
 arg = parser.parse_args()
 
@@ -108,6 +109,14 @@ with tf.Session(config = config) as sess:
     saver.restore(sess, old_model_location) 
     biash1_old = sess.run(tf.get_default_graph().get_tensor_by_name("GAN/Generator/h1/bias:0")) 
     kernelh1_old = sess.run(tf.get_default_graph().get_tensor_by_name("GAN/Generator/h1/kernel:0"))
+    if arg.w == 'yes':
+        # print('shape biash1_old: ', np.shape(biash1_old)) # REMOVE LATER
+        # print('shape kernelh1_old: ', np.shape(kernelh1_old)) # REMOVE LATER
+        # print('len biash1_old: ', len(biash1_old)) # REMOVE LATER
+        # print('len kernelh1_old: ', len(kernelh1_old)) # REMOVE LATER
+        # print('shape normal: ', np.shape(np.random.normal(0,0.01,(1,len(biash1_old))))) # REMOVE LATER
+        biash1_old = biash1_old + np.squeeze(np.random.normal(0,0.001,np.shape(biash1_old))) # fiddle around with the standard devation
+        kernelh1_old = kernelh1_old + np.squeeze(np.random.normal(0,0.001,np.shape(kernelh1_old))) # fiddle around with the standard devation
     # print('GAN/Generator/h1/bias:0 old:', biash1_old) # REMOVE LATER
     # print('GAN/Generator/h1/kernel:0 old:', kernelh1_old) # REMOVE LATER
     # biash2_old = sess.run(tf.get_default_graph().get_tensor_by_name("GAN/Generator/h2/bias:0")) # REMOVE LATER
@@ -209,6 +218,18 @@ with tf.Session(config = config) as sess:
     sess.run(assign_opbias)   
     sess.run(assign_opbias)
     sess.run(assign_opkernel)
+
+    wiggle_std = 0.001
+    if arg.w == 'yes':
+        for key in restore_dict:
+            split = key.split('/')
+            if split[1] != 'Discriminator':
+                #print('key: ', key) # REMOVE LATER
+                tensor = tf.get_default_graph().get_tensor_by_name(key + ':0')
+                #print('before: ', sess.run(tensor)) # REMOVE LATER
+                assign_op = tf.assign(tensor, tensor + np.squeeze(np.random.normal(0,wiggle_std, np.shape(tensor))))
+                sess.run(assign_op)
+                #print('after: ', sess.run(tensor)) # REMOVE LATER
     saver = tf.train.Saver()
     # print('GAN/Generator/h1/bias:0 new:', sess.run(biash1)) # REMOVE LATER
     # print('GAN/Generator/h1/kernel:0 new:', sess.run(kernelh1)) # REMOVE LATER
@@ -239,7 +260,10 @@ with tf.Session(config = config) as sess:
             plt.ylabel('y')
             plt.title('Swiss Roll Data')
             plt.tight_layout()
-            plt.savefig('../../plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i)
+            if arg.w == 'no':
+                plt.savefig('../../plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i)
+            elif arg.w == 'yes':
+                plt.savefig('../../plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i'+'_w'+str(wiggle_std)+'.png'%i)
             plt.close()
         if arg.advplot == 'advanced' and i%100 == 0:
             if arg.zdim == 2:
@@ -316,7 +340,10 @@ with tf.Session(config = config) as sess:
             plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
             fig.subplots_adjust(left=0.3, bottom=0.13, wspace = 0.2)
             
-            fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i, bbox_inches='tight')
+            if arg.w == 'no':
+                fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i, bbox_inches='tight')
+            elif arg.w == 'yes':
+                fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i'+'_w'+str(wiggle_std)+'.png'%i, bbox_inches='tight')
 
         for _ in range(nd_steps):
             _, dloss = sess.run([disc_step, disc_loss], feed_dict={X: X_batch, Z: Z_batch})
