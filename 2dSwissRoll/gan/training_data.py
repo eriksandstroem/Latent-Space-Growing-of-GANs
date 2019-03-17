@@ -21,7 +21,7 @@ def sample_data_quad(n=10000, scale=100):
 
 def sample_data_swissroll(n=10000, noise = 0.1):
 	data = np.zeros((n,2))
-	swissroll, _ = sklearn.datasets.make_swiss_roll(n,noise)
+	swissroll, _ = sklearn.datasets.make_swiss_roll(n,noise) # this gives biased sampling along the line
 	swissroll = np.asarray(swissroll)
 
 	x = swissroll[:,0]
@@ -31,7 +31,7 @@ def sample_data_swissroll(n=10000, noise = 0.1):
 	return np.array(data)
 
 def sample_data_spiral(n=10000, noise = 0.1):
-	t = np.random.uniform(0.0,9.42, n)
+	t = np.random.uniform(0.0,9.42, n) # this gives an unbalanced sampling along the line
 	x = np.multiply(t,np.cos(t)) + np.random.normal(0, noise, n)
 	y = np.multiply(t,np.sin(t)) + np.random.normal(0, noise, n)
 	z = t + np.random.normal(0, noise, n)
@@ -47,3 +47,26 @@ def sample_Z(batchsize, dim, z):
         return np.random.uniform(-1., 1., size=[batchsize, dim])
     elif z == 'g':
         return np.random.normal(0, 1, size=[batchsize, dim])
+
+
+def sample_data_sinus_swissroll(n=10000, noise = 0.5, arch = 'single'):
+	data = np.zeros((n,2))
+
+	t = np.random.uniform(4.71,14.14,n) # this gives unbalances/biased sampling along the line
+
+	# failed Hennings sinus version
+	# noise = np.absolute(amplitude*np.sin(frequency*t*(0.1*t+1)))
+	# x = np.multiply(t,np.cos(t))+np.random.normal(0, noise, n)
+	# y = np.multiply(t,np.sin(t))+np.random.normal(0, noise, n)
+
+	# my versions
+	if arch == 'double':
+		x = np.multiply(t,np.cos(t))+np.sin(10*t)+np.random.normal(0, noise, n)
+		y = np.multiply(t,np.sin(t))+np.cos(10*t)+np.random.normal(0, noise, n)
+	elif arch == 'single':
+		x = np.multiply(t,np.cos(t))+np.cos(10*t)+np.random.normal(0, noise, n)
+		y = np.multiply(t,np.sin(t))+np.random.normal(0, noise, n)
+
+	data[:,0] = x
+	data[:,1] = y
+	return np.array(data)
