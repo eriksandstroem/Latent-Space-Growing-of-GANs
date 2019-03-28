@@ -18,20 +18,21 @@ parser.add_argument('--batchSize', default=128, type=int, help='batch size (defa
 parser.add_argument('--lr', '--learning-rate', default=0.001, type=float, help='learning rate (default: 0.001)')
 parser.add_argument('--tn', '--train_noise', default=0.0, choices=[0.0, 0.5], type=float, help='training noise std (default: 0.0)')
 parser.add_argument('--ptn', '--pretrain_noise', default=0.0, choices=[0.0, 0.5], type=float, help='pretrained noise (default: 0.0)')
-parser.add_argument('--i', '--iterations', default=1050, type=int, help='iterations (default: 10 050)')
+parser.add_argument('--i', '--iterations', default=10050, type=int, help='iterations (default: 10 050)')
 parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
 parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
 parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
 #parser.add_argument('--m', '--momentum', default=0.9, type=float, help='momentum (default: 0.9)')
 #parser.add_argument('--w', '--weight-decay', default=0, type=float, help='regularization weight decay (default: 0.0)')
 
-# notation: a.b = #hidden layers.#neurons per layer
+# notation: a.b = #hidden layers.#neurons per layerasp
 parser.add_argument('--arch', '--architecture', default='2.16', help="architecture (default: 2.16)")
 parser.add_argument('--l', '--loss', default='wa', choices=['ns', 'wa'], help="loss function (default: wa)")
 parser.add_argument('--init', '--initialization', default='z', choices=['z', 'n', 'u','x'], help="growth initialization (default: z)")
 parser.add_argument('--d', '--dataset', default='standard', choices=['standard', 'sinus_single', 'sinus_double'], help="dataset (default: standard)")
 parser.add_argument('--advplot', '--advanced_plot', default='standard', choices=['standard', 'advanced'], help="advanced plotting flag (default: standard)")
 parser.add_argument('--w', '--wiggle_weights', default='no', choices=['no', 'yes'], help="wiggle weights flag (default: no)")
+parser.add_argument('--wiggle', '--wiggle_noise', default=0.01, type=float, help='wiggle std (default: 0.01)')
 parser.add_argument('--a', '--activation', default='lre', help="activation (default: leaky relu)")
 arg = parser.parse_args()
 
@@ -219,7 +220,6 @@ with tf.Session(config = config) as sess:
     sess.run(assign_opbias)
     sess.run(assign_opkernel)
 
-    wiggle_std = 0.001
     if arg.w == 'yes':
         for key in restore_dict:
             split = key.split('/')
@@ -227,7 +227,7 @@ with tf.Session(config = config) as sess:
                 #print('key: ', key) # REMOVE LATER
                 tensor = tf.get_default_graph().get_tensor_by_name(key + ':0')
                 #print('before: ', sess.run(tensor)) # REMOVE LATER
-                assign_op = tf.assign(tensor, tensor + np.squeeze(np.random.normal(0,wiggle_std, np.shape(tensor))))
+                assign_op = tf.assign(tensor, tensor + np.squeeze(np.random.normal(0,arg.wiggle, np.shape(tensor))))
                 sess.run(assign_op)
                 #print('after: ', sess.run(tensor)) # REMOVE LATER
     saver = tf.train.Saver()
@@ -265,14 +265,14 @@ with tf.Session(config = config) as sess:
             elif arg.w == 'yes':
                 plt.savefig('../../plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i'+'_w'+str(wiggle_std)+'.png'%i)
             plt.close()
+
         if arg.advplot == 'advanced' and i%100 == 0:
             if arg.zdim == 2:
                 Z_dense = np.mgrid[-1:1:0.01, -1:1:0.01].reshape(2,-1).T
             elif arg.zdim == 1:
-                Z_dense = np.arange(-1,1.01,0.01)
+                Z_dense = np.arange(-1,1.01,0.0001)
                 Z_dense = np.reshape(Z_batch_dense,(len(Z_dense),1))
             X_dense = np.mgrid[-15:15.06:0.05, -15:15.06:0.05].reshape(2,-1).T
-
             d_logits_dense = sess.run(r_logits, feed_dict={X: X_dense})
             d_logits = sess.run(r_logits, feed_dict={X: X_batch})
             g_logits = sess.run(f_logits, feed_dict={Z: Z_dense})
@@ -340,10 +340,13 @@ with tf.Session(config = config) as sess:
             plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
             fig.subplots_adjust(left=0.3, bottom=0.13, wspace = 0.2)
             
+            I = str(i)
             if arg.w == 'no':
-                fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i.png'%i, bbox_inches='tight')
+                fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+
+                    '_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_'+I+'test.png', bbox_inches='tight')
             elif arg.w == 'yes':
-                fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_%i'+'_w'+str(wiggle_std)+'.png'%i, bbox_inches='tight')
+                fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+
+                    '_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/iteration_'+I+'_w'+str(arg.wiggle)+'.png', bbox_inches='tight')
 
         for _ in range(nd_steps):
             _, dloss = sess.run([disc_step, disc_loss], feed_dict={X: X_batch, Z: Z_batch})

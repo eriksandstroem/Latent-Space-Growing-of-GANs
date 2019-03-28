@@ -20,7 +20,7 @@ parser.add_argument('--ptn', '--pretrain_noise', default=0.0, choices=[0.0, 0.5]
 parser.add_argument('--i', '--iterations', default=10050, type=int, help='iterations (default: 10 050)')
 parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
 parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
-parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
+parser.add_argument('--zdim', '--zdimension', default=2, type=int, help="z-dimension (default: 2)")
 #parser.add_argument('--m', '--momentum', default=0.9, type=float, help='momentum (default: 0.9)')
 #parser.add_argument('--w', '--weight-decay', default=0, type=float, help='regularization weight decay (default: 0.0)')
 
@@ -31,6 +31,7 @@ parser.add_argument('--init', '--initialization', default='z', choices=['z', 'n'
 parser.add_argument('--a', '--activation', default='lre', help="activation (default: leaky relu)")
 parser.add_argument('--d', '--dataset', default='standard', choices=['standard', 'sinus_single', 'sinus_double'], help="dataset (default: standard)")
 parser.add_argument('--gflag', '--growflag', default='', choices=['', 'grown'], help="grow or not grow (default: not grown)")
+parser.add_argument('--plotstyle', default='standard', choices=['standard', 'connectivity'], help="plot style (default: standard)")
 arg = parser.parse_args()
 
 # create model directory to store/load old model
@@ -61,7 +62,6 @@ if arg.gflag == 'grown':
 		g = split[-3]
 		d_loss[idx] = float(d[5:])
 		g_loss[idx] = float(g[5:-1])
-
 
 	xaxis = np.arange(0,(len(x)-13)*50,50)
 
@@ -166,8 +166,12 @@ with tf.Session() as sess:
 	if arg.zdim == 2:
 		Z_batch = np.mgrid[-1:1:0.01, -1:1:0.01].reshape(2,-1).T
 	elif arg.zdim == 1:
-		Z_batch = np.arange(-1,1.01,0.01)
+		Z_batch = np.arange(-1,1.0001,0.0001)
 		Z_batch = np.reshape(Z_batch,(len(Z_batch),1))
+	elif arg.zdim == 5:
+		Z_batch = np.mgrid[-1:1:0.1, -1:1:0.1, -1:1:0.1, -1:1:0.1, -1:1:0.1].reshape(5,-1).T
+	elif arg.zdim == 10:
+		Z_batch = np.mgrid[-1:1:0.5, -1:1:0.5, -1:1:0.5, -1:1:0.5, -1:1:0.5, -1:1:0.5, -1:1:0.5, -1:1:0.5, -1:1:0.5, -1:1:0.5].reshape(10,-1).T
 
 	d_logits_dense = sess.run(r_logits, feed_dict={X: X_dense})
 	d_logits = sess.run(r_logits, feed_dict={X: X_batch})
@@ -184,7 +188,6 @@ with tf.Session() as sess:
 
 	g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
 	x_plot = X_batch
-
 	fig, (ax0, ax1, ax2, cax) = plt.subplots(ncols=4, figsize=(40,7))
 	fig.subplots_adjust(wspace=0.2)
 	ax1.grid(True)
@@ -192,25 +195,35 @@ with tf.Session() as sess:
 	x2 = np.reshape(x_plot[:,1],(500,1))
 	g1 = np.reshape(g_plot[:,0],(len(g_plot),1))
 	g2 = np.reshape(g_plot[:,1],(len(g_plot),1))
-	cd = np.reshape(d_prob,(500,1))
-	cg = np.reshape(g_prob,(len(g_plot),1))
-	cd_dense = np.reshape(d_prob_dense,(len(d_prob_dense),1))
-	if arg.zdim == 2:
-		gax = ax1.scatter(g1, g2, c = cg, marker='.',s=2)
-	elif arg.zdim == 1:
-		gax = ax1.scatter(g1, g2, c = cg, marker='.',s=20)
+
+	if arg.plotstyle == 'standard':
+		cd = np.reshape(d_prob,(500,1))
+		cg = np.reshape(g_prob,(len(g_plot),1))
+		cd_dense = np.reshape(d_prob_dense,(len(d_prob_dense),1))
+		xax = ax1.scatter(x1,x2, marker='x')
+		if arg.zdim != 1:
+			gax = ax1.scatter(g1, g2, marker='.',s=2)
+		elif arg.zdim == 1:
+			gax = ax1.scatter(g1, g2, marker='.',s=20)
+	elif arg.plotstyle == 'connectivity':
+		cg = np.reshape(Z_batch,(len(Z_batch),1))
+		cd_dense = np.reshape(d_prob_dense,(len(d_prob_dense),1))
+		xax = ax1.scatter(x1,x2, marker='x')
+		if arg.zdim != 1:
+			gax = ax1.scatter(g1, g2, c = cg, marker='.',s=2)
+		elif arg.zdim == 1:
+			gax = ax1.scatter(g1, g2, c = cg, marker='.',s=20)
 		
-	xax = ax1.scatter(x1,x2, c = cd, marker='x')
 	ax1.legend((xax,gax), ("Real Data", "Generated Data"))
 	ax1.set_title('Sample Space')
 
 	if arg.zdim == 2:
 		z1 = np.reshape(Z_batch[:,0],(len(Z_batch),1))
 		z2 = np.reshape(Z_batch[:,1],(len(Z_batch),1))
-		ax2.scatter(z1, z2, c = cg, marker='.',s=10)
+		sax = ax2.scatter(z1, z2, c = cg, marker='.',s=10)
 	elif arg.zdim == 1:
 		z1 = Z_batch
-		ax2.scatter(z1, np.zeros(len(Z_batch)) ,c = cg, marker = '.', s=30)
+		sax = ax2.scatter(z1, np.zeros(len(Z_batch)) ,c = cg, marker = '.', s=30)
 
 	ax2.set_title('Latent Space')
 
@@ -231,67 +244,16 @@ with tf.Session() as sess:
 	ax0.xaxis.set_ticks(np.arange(-15,15,5))
 	ax0.yaxis.set_ticks(np.arange(-15,15,5))
 
-	fig.colorbar(gax, cax=cax, ax=[ax0,ax1,ax2])
+	if arg.plotstyle == 'standard':
+		fig.colorbar(sax, cax =cax, ax=[ax0,ax2])
+	elif arg.plotstyle == 'connectivity':
+		fig.colorbar(gax, cax=cax, ax=[ax0,ax1,ax2])
 
 	textstr = 'D_r avg:'+str(mean_prob_d)[:-4]+'    D_f avg:'+str(mean_prob_g)[:-4]
 	plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
 	fig.subplots_adjust(left=0.3, bottom=0.13, wspace = 0.2)
 	if arg.gflag == 'grown':
-		fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png', bbox_inches='tight')
+		fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'_'+arg.plotstyle+'.png', bbox_inches='tight')
 	else:
-		fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.png', bbox_inches='tight')
+		fig.savefig('../../grid_plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_'+arg.plotstyle+'.png', bbox_inches='tight')
 
-
-
-	# g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
-	# x_plot = X_batch
-
-	# fig, (ax1, ax2, cax) = plt.subplots(ncols=3, figsize=(20,5))
-	# fig.subplots_adjust(wspace=0.2)
-	# ax1.grid(True)
-	# x1 = np.reshape(x_plot[:,0],(500,1))
-	# x2 = np.reshape(x_plot[:,1],(500,1))
-	# g1 = np.reshape(g_plot[:,0],(len(g_plot),1))
-	# g2 = np.reshape(g_plot[:,1],(len(g_plot),1))
-	# cd = np.reshape(d_prob,(500,1))
-	# cg = np.reshape(g_prob,(len(g_plot),1))
-	# cd_dense = np.reshape(d_prob_dense,(len(d_prob_dense),1))
-	# if arg.zdim == 2:
-	# 	gax = ax1.scatter(g1, g2, c = cg, marker='.',s=2)
-	# elif arg.zdim == 1:
-	# 	gax = ax1.scatter(g1, g2, c = cg, marker='.',s=20)
-		
-	# xax = ax1.scatter(x1,x2, c = cd, marker='x')
-	# ax1.legend((xax,gax), ("Real Data", "Generated Data"))
-	# ax1.set_xlabel('x')
-	# ax1.set_ylabel('y')
-	# ax1.set_title('Sample Space')
-
-	# if arg.zdim == 2:
-	# 	z1 = np.reshape(Z_batch[:,0],(len(Z_batch),1))
-	# 	z2 = np.reshape(Z_batch[:,1],(len(Z_batch),1))
-	# 	ax2.scatter(z1, z2, c = cg, marker='.',s=1)
-	# elif arg.zdim == 1:
-	# 	z1 = Z_batch
-	# 	ax2.scatter(z1, np.zeros(len(Z_batch)) ,c = cg, marker = '.', s=30)
-
-	# ax2.set_xlabel('x')
-	# ax2.set_ylabel('y')
-	# ax2.set_title('Latent Space')
-
-	# loc = plticker.MultipleLocator(base=1.0)
-	# ax2.xaxis.set_major_locator(loc)
-	# ax2.yaxis.set_major_locator(loc)
-
-	# ip = InsetPosition(ax2, [1.05,0,0.05,1]) 
-	# cax.set_axes_locator(ip)
-
-	# fig.colorbar(gax, cax=cax, ax=[ax1,ax2])
-
-	# textstr = 'D_r avg:'+str(mean_prob_d)[:-4]+'    D_f avg:'+str(mean_prob_g)[:-4]
-	# plt.text(0.30, 0.0, textstr, fontsize=14, transform=plt.gcf().transFigure)
-	# fig.subplots_adjust(left=0.3, bottom=0.13)
-	# if arg.gflag == 'grown':
-	# 	fig.savefig('../../grid_plots/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png', bbox_inches='tight')
-	# else:
-	# 	fig.savefig('../../grid_plots/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.png', bbox_inches='tight')

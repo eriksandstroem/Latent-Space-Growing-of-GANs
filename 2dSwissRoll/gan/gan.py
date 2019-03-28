@@ -19,7 +19,7 @@ parser.add_argument('--tn', '--train_noise', default=0.0, type=float, help='trai
 parser.add_argument('--i', '--iterations', default=15050, type=int, help='iterations (default: 15 050)')
 parser.add_argument('--z', '--zdistribution', default='u', choices=['u', 'g'], help="z-distribution (default: u)")
 parser.add_argument('--opt', '--optimizer', default='sgd', choices=['sgd', 'rms', 'ad'], help="optimizer (default: sgd)")
-parser.add_argument('--zdim', '--zdimension', default=2, type=int, choices=[1, 2], help="z-dimension (default: 2)")
+parser.add_argument('--zdim', '--zdimension', default=2, type=int, help="z-dimension (default: 2)")
 #parser.add_argument('--m', '--momentum', default=0.9, type=float, help='momentum (default: 0.9)')
 #parser.add_argument('--w', '--weight-decay', default=0, type=float, help='regularization weight decay (default: 0.0)')
 
@@ -152,28 +152,27 @@ elif arg.d == 'sinus_double':
     x_plot = sample_data_sinus_swissroll(n=arg.batchSize, noise = arg.tn, arch = 'double')
 
 for i in range(arg.i):
-    if arg.d = 'standard':
+    if arg.d == 'standard':
         X_batch = sample_data_swissroll(n=arg.batchSize, noise = arg.tn)
-    elif arg.d = 'sinus_single':
+    elif arg.d == 'sinus_single':
         X_batch = sample_data_sinus_swissroll(n=arg.batchSize, noise = arg.tn, arch = 'single')
-    elif arg.d = 'sinus_double':
+    elif arg.d == 'sinus_double':
         X_batch = sample_data_sinus_swissroll(n=arg.batchSize, noise = arg.tn, arch = 'double')
     Z_batch = sample_Z(arg.batchSize, arg.zdim, arg.z)
 
     if i%1000 == 0:
         g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
-
-    plt.figure()
-    plt.grid(True)
-    xax = plt.scatter(x_plot[:,0],x_plot[:,1])
-    gax = plt.scatter(g_plot[:,0], g_plot[:,1])
-    plt.legend((xax,gax), ("Real Data", "Generated Data"))
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.title('Swiss Roll Data')
-    plt.tight_layout()
-    plt.savefig('../../plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/iteration_%i.png'%i)
-    plt.close()
+        plt.figure()
+        plt.grid(True)
+        xax = plt.scatter(x_plot[:,0],x_plot[:,1])
+        gax = plt.scatter(g_plot[:,0], g_plot[:,1])
+        plt.legend((xax,gax), ("Real Data", "Generated Data"))
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title('Swiss Roll Data')
+        plt.tight_layout()
+        plt.savefig('../../plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'/iteration_%i.png'%i)
+        plt.close()
 
     for _ in range(nd_steps):
         _, dloss = sess.run([disc_step, disc_loss], feed_dict={X: X_batch, Z: Z_batch})
