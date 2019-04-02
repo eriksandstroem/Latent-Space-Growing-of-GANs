@@ -9,11 +9,13 @@ from utils import pp, visualize, show_all_variables
 import tensorflow as tf
 
 flags = tf.app.flags
-flags.DEFINE_integer("epoch", 30, "Epoch to train [30]")
+flags.DEFINE_integer("epoch", 12, "Epoch to train [12]")
 flags.DEFINE_integer("gpu", 1, "GPU to use [1]")
 flags.DEFINE_float("learning_rate", 0.0002,
                    "Learning rate of for adam [0.0002]")
-flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
+flags.DEFINE_float("beta1", 0.0, "Momentum term 1 of adam [0.0]")
+flags.DEFINE_float("beta2", 0.99, "Momentum term 2 of adam [0.99]")
+flags.DEFINE_float("epsilon", 0.00000001, "Epsilon term of adam [low]")
 flags.DEFINE_integer("batch_size", 64, "The size of batch images [64]")
 flags.DEFINE_integer("sample_num", 64, "The size of sample images [64]")
 flags.DEFINE_integer(
@@ -26,12 +28,14 @@ flags.DEFINE_integer(
     "The size of image to use (will be center cropped). If None, same value as input_height [None]")
 flags.DEFINE_integer("output_height", 128,
                      "The size of the output images to produce [128]")
-flags.DEFINE_integer("z_dim", 64,
+flags.DEFINE_integer("z_dim", 256,
                      "The size of the latent space [256]")
 flags.DEFINE_integer(
     "output_width",
     None,
     "The size of the output images to produce. If None, same value as output_height [None]")
+flags.DEFINE_string("batchnorm", 'yes',
+                     "yes for using batch norm, no for not using it [yes, no, generator]")
 flags.DEFINE_string("dataset", "celebA",
                     "The name of dataset [celebA]")
 flags.DEFINE_string("loss", "RaLS",
@@ -42,8 +46,8 @@ flags.DEFINE_string("input_fname_pattern", "*.jpg",
                     "Glob pattern of filename of input images [*]")
 flags.DEFINE_string("sample_dir", "train_samples",
                     "Directory name to save the image samples [samples]")
-flags.DEFINE_string("architecture", "standard",
-                    "Architecture used during training [standard]")
+flags.DEFINE_string("architecture", "pro",
+                    "Architecture used during training [standard, pro]")
 flags.DEFINE_boolean(
     "train", True, "True for training, False for testing [True]")
 flags.DEFINE_boolean(
@@ -61,8 +65,8 @@ def main(_):
     if FLAGS.output_width is None:
         FLAGS.output_width = FLAGS.output_height
 
-    if not os.path.exists(FLAGS.sample_dir):
-        os.makedirs(FLAGS.sample_dir)
+    # if not os.path.exists(FLAGS.sample_dir):
+    #     os.makedirs(FLAGS.sample_dir)
 
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
     run_config = tf.ConfigProto()
@@ -85,7 +89,8 @@ def main(_):
             architecture = FLAGS.architecture,
             zdistribution = FLAGS.zdistribution,
             loss = FLAGS.loss,
-            z_dim = FLAGS.z_dim) 
+            z_dim = FLAGS.z_dim,
+            batchnorm = FLAGS.batchnorm) 
 
         show_all_variables()
 
