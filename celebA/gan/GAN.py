@@ -13,6 +13,7 @@ from ops import *
 from utils import *
 
 
+
 class GAN(object):
     def __init__(
             self,
@@ -94,6 +95,11 @@ class GAN(object):
             self.D_real, self.D_real_logits = discriminator(inputs, self.batch_size, reuse=False)
             self.D_fake, self.D_fake_logits = discriminator(self.G, self.batch_size, reuse=True)
 
+        elif self.architecture == 'standardwodeconv':
+            self.G = generatorwoDeConv(self.z, self.batch_size)
+            self.D_real, self.D_real_logits = discriminator(inputs, self.batch_size, reuse=False)
+            self.D_fake, self.D_fake_logits = discriminator(self.G, self.batch_size, reuse=True)
+
         elif self.architecture == 'pro':
             if self.batchnorm == 'yes':
                 self.G = generatorPRO(self.z, self.batch_size)
@@ -133,10 +139,14 @@ class GAN(object):
             alpha = tf.random_uniform(shape=[self.batch_size,1,1,1],minval=0., maxval=1.)
             #alpha = tf.ones([batch_size,1,1,1],dtype=tf.float32)
             xhat = tf.add( tf.multiply(alpha,self.inputs), tf.multiply((1-alpha),self.G))
-            if self.batchnorm == 'yes' or self.batchnorm == 'discriminator':
-                D_xhat = discriminatorPRO(xhat, reuse=True)
-            elif self.batchnorm == 'no' or self.batchnorm == 'generator':
-                D_xhat = discriminatorPROwoBn(xhat, reuse=True)
+
+            if self.architecture == 'standard':
+                _, D_xhat = discriminator(xhat, self.batch_size, reuse=True)
+            elif self.architecture == 'pro':
+                if self.batchnorm == 'yes' or self.batchnorm == 'discriminator':
+                    _, D_xhat = discriminatorPRO(xhat, self.batch_size, reuse=True)
+                elif self.batchnorm == 'no' or self.batchnorm == 'generator':
+                    _, D_xhat = discriminatorPROwoBn(xhat, self.batch_size, reuse=True)
 
             gradients = tf.gradients(D_xhat, xhat)[0]
             #print('xhatshape', xhat.shape)_sample
@@ -162,6 +172,12 @@ class GAN(object):
             self.sampler = generator(self.z, self.sample_num, reuse = True)
             self.D_real_sample, self.D_real_logits_sample = discriminator(inputs_sample, self.sample_num, reuse=True)
             self.D_fake_sample, self.D_fake_logits_sample = discriminator(self.sampler, self.sample_num, reuse=True)
+
+        elif self.architecture == 'standardwodeconv':
+            self.sampler = generatorwoDeConv(self.z, self.sample_num, reuse = True)
+            self.D_real_sample, self.D_real_logits_sample = discriminator(inputs_sample, self.sample_num, reuse=True)
+            self.D_fake_sample, self.D_fake_logits_sample = discriminator(self.sampler, self.sample_num, reuse=True)
+
         elif self.architecture == 'pro':
             if self.batchnorm == 'yes':
                 self.sampler = generatorPRO(self.z, self.sample_num, reuse = True)
@@ -199,10 +215,14 @@ class GAN(object):
             alpha = tf.random_uniform(shape=[self.sample_num,1,1,1],minval=0., maxval=1.)
             #alpha = tf.ones([batch_size,1,1,1],dtype=tf.float32)
             xhat = tf.add( tf.multiply(alpha,self.inputs_sample), tf.multiply((1-alpha),self.sampler))
-            if self.batchnorm == 'yes' or self.batchnorm == 'discriminator':
-                D_xhat = discriminatorPRO(xhat, reuse=True)
-            elif self.batchnorm == 'no' or self.batchnorm == 'generator':
-                D_xhat = discriminatorPROwoBn(xhat, reuse=True)
+
+            if self.architecture == 'standard' or self.architecture == 'standardwodeconv':
+                _, D_xhat = discriminator(xhat, self.sample_num, reuse=True)
+            elif self.architecture == 'pro':
+                if self.batchnorm == 'yes' or self.batchnorm == 'discriminator':
+                    _, D_xhat = discriminatorPRO(xhat, self.sample_num, reuse=True)
+                elif self.batchnorm == 'no' or self.batchnorm == 'generator':
+                    _, D_xhat = discriminatorPROwoBn(xhat, self.sample_num, reuse=True)
 
             gradients = tf.gradients(D_xhat, xhat)[0]
             #print('xhatshape', xhat.shape)
@@ -219,7 +239,6 @@ class GAN(object):
 
             self.d_loss_sample = D_loss_real + D_loss_fake
 
-
         """data visualization"""
         self.z_sum = histogram_summary("z", self.z)
         self.d_real_sum = histogram_summary("d_real", self.D_real)
@@ -235,20 +254,22 @@ class GAN(object):
 
         self.d_vars = [var for var in t_vars if 'd_' in var.name]
         self.g_vars = [var for var in t_vars if 'g_' in var.name]
-
         self.saver = tf.train.Saver()
 
     def train(self, config):
+
         d_optim = tf.train.AdamOptimizer(
             config.learning_rate,
             beta1=config.beta1,beta2 = config.beta2, epsilon= config.epsilon).minimize(
             self.d_loss,
             var_list=self.d_vars)
+
         g_optim = tf.train.AdamOptimizer(
             config.learning_rate,
             beta1=config.beta1).minimize(
             self.g_loss,
             var_list=self.g_vars)
+
         try:
             tf.global_variables_initializer().run()
         except BaseException:
@@ -258,7 +279,6 @@ class GAN(object):
                                     self.G_sum, self.d_loss_fake_sum, self.g_loss_sum])
         self.d_sum = merge_summary(
             [self.d_real_sum, self.d_loss_real_sum, self.d_loss_sum])
-
 
 
         if not os.path.exists('../logs/'+self.model_dir):
@@ -346,7 +366,7 @@ class GAN(object):
                     "Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" %
                     (epoch, idx, batch_idxs, time.time() - start_time, errD_fake + errD_real, errG))
 
-                if np.mod(counter, 300) == 0:
+                if np.mod(counter, 500) == 0:
                     samples, d_loss, g_loss, D_real, D_fake = self.sess.run(
                         [self.sampler, self.d_loss_sample, self.g_loss_sample, self.D_real_sample, self.D_fake_sample],
                         feed_dict={
@@ -371,7 +391,7 @@ class GAN(object):
 
     @property
     def model_dir(self):
-        return "Arch{}_Zd{}_L{}_Bs{}_Lr{}_Zd{}_Iwh{}_Owh{}_Bn{}_classic".format(
+        return "Arch{}_Zd{}_L{}_Bs{}_Lr{}_Zd{}_Iwh{}_Owh{}_Bn{}_classic_hopefix".format(
             self.architecture, self.z_dim, self.loss, self.batch_size, self.learning_rate, self.zdistribution,
             self.input_height, self.output_width, str(self.batchnorm))
 

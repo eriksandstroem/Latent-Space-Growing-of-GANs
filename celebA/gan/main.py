@@ -47,7 +47,7 @@ flags.DEFINE_string("input_fname_pattern", "*.jpg",
 flags.DEFINE_string("sample_dir", "train_samples",
                     "Directory name to save the image samples [samples]")
 flags.DEFINE_string("architecture", "pro",
-                    "Architecture used during training [standard, pro]")
+                    "Architecture used during training [standard, pro, standardwodeconv]")
 flags.DEFINE_boolean(
     "train", True, "True for training, False for testing [True]")
 flags.DEFINE_boolean(
@@ -101,8 +101,8 @@ def main(_):
            if not gan.load()[0]:
                raise Exception("[!] Train a model first, then run test mode")
 
-        if FLAGS.visualize:
-            visualize(sess, gan, FLAGS)
+        # if FLAGS.visualize:
+        #     visualize(sess, gan, FLAGS)
 
 
 if __name__ == '__main__':

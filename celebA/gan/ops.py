@@ -52,31 +52,40 @@ def conv_cond_concat(x, y):
         x, y * tf.ones([x_shapes[0], x_shapes[1], x_shapes[2], y_shapes[3]])], 3)
 
 def conv4x4(input_, output_dim, batch_size, name = 'g_h1'):
-    print('inputshape: ', input_.get_shape())
     with tf.variable_scope(name):
-        fan_in = output_dim/(4*4)
-        stddev = np.sqrt(2/fan_in)
+        fan_in = output_dim//(4*4)
+        stddev = np.sqrt(2/fan_in).astype(np.float32)
         dense = tf.layers.dense(input_, output_dim, activation=None, 
             use_bias=False, name = name,
             kernel_initializer=tf.initializers.random_normal(0,stddev=stddev))
 
         biases = tf.get_variable(
-        'biases', [output_dim/(4*4)], initializer=tf.constant_initializer(0.0))
-        dense = tf.reshape(dense, [batch_size, 4, 4, 256]) #[batch_size, 256, 4, 4]
+        'biases', [output_dim//(4*4)], initializer=tf.constant_initializer(0.0))
+        dense = tf.reshape(dense, [batch_size, 4, 4, output_dim//(4*4)]) #[batch_size, 256, 4, 4]
         dense = tf.nn.bias_add(dense, biases)
         #dense = apply_bias(dense)
 
         return dense
+
+# def upscale2d(x, factor=2):
+#     assert isinstance(factor, int) and factor >= 1
+#     if factor == 1: return x
+#     with tf.variable_scope('Upscale2D'):
+#         s = x.shape
+#         x = tf.reshape(x, [s[0], s[3], s[1], s[2]])
+#         x = tf.reshape(x, [-1, s[1], s[2], 1, s[3], 1])
+#         x = tf.tile(x, [1, 1, 1, factor, 1, factor])
+#         x = tf.reshape(x, [-1, s[1], s[2] * factor, s[3] * factor])
+#         x = tf.reshape(x, [s[0], s[1]*factor, s[2]*factor, s[3]])
+#         return x
 
 def upscale2d(x, factor=2):
     assert isinstance(factor, int) and factor >= 1
     if factor == 1: return x
     with tf.variable_scope('Upscale2D'):
         s = x.shape
-        x = tf.reshape(x, [s[0], s[3], s[1], s[2]])
         x = tf.reshape(x, [-1, s[1], s[2], 1, s[3], 1])
-        x = tf.tile(x, [1, 1, 1, factor, 1, factor])
-        x = tf.reshape(x, [-1, s[1], s[2] * factor, s[3] * factor])
+        x = tf.tile(x, [1, 1, factor, factor, 1, 1])
         x = tf.reshape(x, [s[0], s[1]*factor, s[2]*factor, s[3]])
         return x
 
@@ -98,7 +107,8 @@ def conv2d(input_, output_dim,
 
         biases = tf.get_variable(
             'biases', [output_dim], initializer=tf.constant_initializer(0.0))
-        conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
+        #conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
+        conv = tf.nn.bias_add(conv, biases) #TEST
         #conv = apply_bias(conv, biases)
 
         return conv
@@ -122,7 +132,8 @@ def conv2dVALID(input_, output_dim,
 
         biases = tf.get_variable(
             'biases', [output_dim], initializer=tf.constant_initializer(0.0))
-        conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
+        #conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
+        conv = tf.nn.bias_add(conv, biases) #TEST
         #conv = apply_bias(conv, biases)
 
         return conv
@@ -158,6 +169,8 @@ def deconv2d(input_, output_shape,
 def lrelu(x, leak=0.2, name="lrelu"):
     return tf.maximum(x, leak * x)
 
+def relu(x, name="relu"):
+    return tf.maximum(x, 0.0)
 
 def linear(input_, output_size,
            scope=None, stddev=0.02, bias_start=0.0, with_w=False):

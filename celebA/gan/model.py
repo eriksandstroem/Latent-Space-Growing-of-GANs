@@ -83,7 +83,7 @@ def generatorPRO(z, batch_size=64, reuse = False):
         h12 = conv2d(h11, 8, 3, 3, 1, 1, name='g_h12', stddev = np.sqrt(2/(8*128*128)))
         h12 = lrelu(g_bn12(h12))
 
-        h13 = conv2d(h12, 3, 1, 1, 1, 1, name='g_h13', stddev = np.sqrt(2/(16*128*128)))
+        h13 = conv2d(h12, 3, 1, 1, 1, 1, name='g_h13', stddev = np.sqrt(2/(8*128*128)))
 
         print('out generator shape: ', h13.get_shape())
         h13 = tf.nn.tanh(h13)
@@ -95,10 +95,10 @@ def generatorPROwoBn(z, batch_size=64, reuse = False):
     with tf.variable_scope("generator") as scope:
         if reuse:
             scope.reuse_variables()
-        #print('z: ', z.get_shape())
+        print('z: ', z.get_shape())
         # fully-connected layers (equivalent to 4x4 conv)
         h1 = conv4x4(z, 256*4*4, batch_size, name = 'g_h1')
-        #print('gh1: ', h1.get_shape())
+        print('gh1: ', h1.get_shape())
         h1 = lrelu(h1)
 
         # conv and upsampling layers
@@ -144,12 +144,60 @@ def generatorPROwoBn(z, batch_size=64, reuse = False):
         h12 = conv2d(h11, 8, 3, 3, 1, 1, name='g_h12', stddev = np.sqrt(2/(8*128*128)))
         h12 = lrelu(h12)
 
-        h13 = conv2d(h12, 3, 1, 1, 1, 1, name='g_h13', stddev = np.sqrt(2/(16*128*128)))
+        h13 = conv2d(h12, 3, 1, 1, 1, 1, name='g_h13', stddev = np.sqrt(2/(8*128*128)))
 
         print('out generator shape: ', h13.get_shape())
         h13 = tf.nn.tanh(h13)
 
         return h13
+
+def generatorwoDeConv(z, batch_size=64, reuse = False):
+    with tf.variable_scope("generator") as scope:
+        if reuse:
+            scope.reuse_variables()
+
+        # fully-connected layer 
+        h1 = linear(z, 256 * 8 * 8, 'g_h1_lin')
+        h1 = tf.reshape(h1, [batch_size, 8, 8, 256])
+        h1 = tf.nn.relu(g_bn1(h1))
+        print('shapeh1: ', h1.get_shape())
+
+        h2 = upscale2d(h1, factor=2)
+        print('shapeh2: ', h2.get_shape())
+        h2 = conv2d(h2, 256, 5, 5, 1, 1, name = 'g_h2', stddev = np.sqrt(2/(256*16*16)))
+        h2 = tf.nn.relu(g_bn2(h2))
+        print('shapeh2: ', h2.get_shape())
+
+        h3 = conv2d(h2, 256, 5, 5, 1, 1, name = 'g_h3', stddev = np.sqrt(2/(256*16*16)))
+        h3 = tf.nn.relu(g_bn3(h3))
+        print('shapeh3: ', h3.get_shape())
+
+        h4 = upscale2d(h3, factor=2)
+        h4 = conv2d(h4, 256, 5, 5, 1, 1, name = 'g_h4', stddev = np.sqrt(2/(256*32*32)))
+        h4 = tf.nn.relu(g_bn4(h4))
+        print('shapeh4: ', h4.get_shape())
+
+        h5 = conv2d(h4, 256, 5, 5, 1, 1, name = 'g_h5', stddev = np.sqrt(2/(256*32*32)))
+        h5 = tf.nn.relu(g_bn5(h5))
+        print('shapeh5: ', h5.get_shape())
+
+        h6 = upscale2d(h5, factor=2)
+        h6 = conv2d(h6, 128, 5, 5, 1, 1, name = 'g_h6', stddev = np.sqrt(2/(256*64*64)))
+        h6 = tf.nn.relu(g_bn6(h6))
+        print('shapeh6: ', h6.get_shape())
+
+        h7 = upscale2d(h6, factor=2)
+        h7 = conv2d(h7, 64, 5, 5, 1, 1, name = 'g_h7', stddev = np.sqrt(2/(128*128*128)))
+        h7 = tf.nn.relu(g_bn7(h7))
+        print('shapeh7: ', h7.get_shape())
+
+        h8 = conv2d(h7, 3, 5, 5, 1, 1, name = 'g_h8', stddev = np.sqrt(2/(64*128*128)))
+        h8 = tf.nn.relu(g_bn8(h8))
+        print('shapeh8: ', h8.get_shape())
+
+        h8 = tf.nn.tanh(h8)
+
+        return h8
 
 
 def generator(z, batch_size=64, reuse = False):
@@ -260,7 +308,7 @@ def discriminatorPRO(image, batch_size=64, reuse=False):
         h13 = lrelu(d_bn13(h13))
 
         out = tf.layers.dense(h13, 1, activation=None, name = 'd_final',
-            kernel_initializer=tf.truncated_normal_initializer(0,stddev=np.sqrt(2/256)),bias_initializer=tf.zeros_initializer())
+            kernel_initializer=tf.initializers.random_normal(0,stddev=np.sqrt(2/256)),bias_initializer=tf.zeros_initializer())
 
         return tf.nn.sigmoid(out), out
 
@@ -330,7 +378,7 @@ def discriminatorPROwoBn(image, batch_size=64, reuse=False):
         h13 = lrelu(h13)
 
         out = tf.layers.dense(h13, 1, activation=None, name = 'd_final',
-            kernel_initializer=tf.truncated_normal_initializer(0,stddev=np.sqrt(2/256)),bias_initializer=tf.zeros_initializer())
+            kernel_initializer=tf.initializers.random_normal(0,stddev=np.sqrt(2/256)),bias_initializer=tf.zeros_initializer())
 
         return tf.nn.sigmoid(out), out
 
@@ -401,3 +449,122 @@ def discriminator(image, batch_size=64, reuse=False):
 #         h8 = tf.nn.tanh(h8)
 
 #         return h8
+
+
+# feature_map_shrink can be normal, fast. Normal is that we decrease the feature maps by half every other layer.
+# fast is that we decrease them as late as possible, doing it for every layer when we need to.
+# spatial_map_growth can be normal, fast. Normal is that we double the spatial dimension every other layer.
+# fast is that we double the spatial dimension every layer.
+
+def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lrelu', output_dim = 128,
+    feature_map_shrink = 'normal', spatial_map_growth = 'normal'):
+    with tf.variable_scope("generator") as scope:
+        if reuse:
+            scope.reuse_variables()
+
+        if feature_map_shrink == 'fast':
+            nbr_layers_shrink = int(z.get_shape()[-1])//8
+            idx_shrink = layers - np.log2(nbr_layers_shrink)
+            print('idx_shrink: ', idx_shrink)
+        print('input shape z:', z.get_shape())
+        for i in range(layers):
+            if i == 0:
+                # fully-connected layers (equivalent to 4x4 conv)
+                h = conv4x4(z, int(z.get_shape()[-1])*4*4, batch_size, name = 'g_h'+str(i+1))
+                print('g_h1:', h.get_shape())
+            else:
+                if spatial_map_growth == 'normal' and i % 2 == 0 and int(h.get_shape()[1]) < output_dim:
+                    h = upscale2d(h, factor=2)
+                elif spatial_map_growth == 'fast' and int(h.get_shape()[1]) < output_dim:
+                    h = upscale2d(h, factor=2)
+                if feature_map_shrink == 'normal':
+                    if i % 2 == 0 and int(h.get_shape()[-1]) > 8:
+                        h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
+                        np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        print('g_h'+str(i+1)+':', h.get_shape())
+                    else:
+                        h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
+                        np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        print('g_h'+str(i+1)+':', h.get_shape())
+                elif feature_map_shrink == 'fast':
+                    if i >= idx_shrink:
+                        print('i:', i)
+                        h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
+                        np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        print('g_h'+str(i+1)+':', h.get_shape())
+                    else:
+                        h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
+                        np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        print('g_h'+str(i+1)+':', h.get_shape())
+
+                
+            if bn:
+                g_bn = batch_norm(name='g_bn'+str(i+1))
+                h = g_bn(h)
+            if activation == 'lrelu':
+                h = lrelu(h)
+            elif activation == 'relu':
+                h = relu(h)
+
+        out = conv2d(h, 3, 1, 1, 1, 1, name='g_h'+str(layers+1), stddev = np.sqrt(2/(8*output_dim*output_dim)))
+        print('out generator shape: ', out.get_shape())
+        out = tf.nn.tanh(out)
+    return out
+
+# feature_map_growth can be normal, fast. Normal is that we increase the feature maps by doubling every other layer.
+# fast is that we decrease them as early as possible, doing it for every layer up to 256.
+# spatial_map_shrink can be normal, fast. Normal is that we halve the spatial dimension every other layer.
+# fast is that we halve the spatial dimension every layer.
+
+
+def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lrelu', input_dim = 128,
+    feature_map_growth = 'normal', spatial_map_shrink = 'normal'):
+    with tf.variable_scope("discriminator") as scope:
+        if reuse:
+            scope.reuse_variables()
+
+        for i in range(layers):
+            if i == 0:
+                # 1x1 conv
+                h = conv2d(image, 8, 1, 1, 1, 1, name = 'd_h1')
+                print('d_h1:', h.get_shape())
+            elif i == layers-1:
+                print('i:', i)
+                h = conv2dVALID(h, int(h.get_shape()[-1]), 4, 4, 1, 1, name = 'd_h'+str(layers+1))
+                print('d_h'+str(i+1)+':', h.get_shape())
+            else:
+                if spatial_map_shrink == 'normal' and (i+1) % 2 == 0 and i != 1 and int(h.get_shape()[1]) > 4:
+                    h = downscale2d(h, factor=2)
+                elif spatial_map_shrink == 'fast' and int(h.get_shape()[1]) > 4:
+                    h = downscale2d(h, factor=2)
+                if feature_map_growth == 'normal':
+                    if i % 2 == 0 and int(h.get_shape()[-1]) < 256:
+                        h = conv2d(h, int(h.get_shape()[-1])*2, 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
+                        np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        print('d_h'+str(i+1)+':', h.get_shape())
+                    else:
+                        h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
+                        np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        print('d_h'+str(i+1)+':', h.get_shape())
+                elif feature_map_growth == 'fast':
+                    if int(h.get_shape()[-1]) < 256:
+                        h = conv2d(h, int(h.get_shape()[-1])*2, 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
+                        np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        print('d_h'+str(i+1)+':', h.get_shape())
+                    else:
+                        h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
+                        np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        print('d_h'+str(i+1)+':', h.get_shape())
+
+            if bn:
+                d_bn = batch_norm(name='d_bn'+str(i+1))
+                h = d_bn(h)
+            if activation == 'lrelu':
+                h = lrelu(h)
+            elif activation == 'relu':
+                h = relu(h)
+
+        out = tf.layers.dense(h, 1, activation=None, name = 'd_h'+str(layers+1),
+            kernel_initializer=tf.random_normal_initializer(0,stddev=np.sqrt(2/int(h.get_shape()[-1]))),bias_initializer=tf.zeros_initializer())
+        print('d_h'+str(layers+1)+':', out.get_shape())
+    return tf.nn.sigmoid(out), out
