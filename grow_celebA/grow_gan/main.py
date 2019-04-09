@@ -8,15 +8,16 @@ from utils import pp, visualize, show_all_variables
 
 import tensorflow as tf
 
-z_dims = '8.16.32.64.128'
-epochs = '1.1.1.1.1'
-g_layers = '12.12.12.12.12'
-d_layers = '13.13.13.13.13'
-output_dims = '128.128.128.128.128' 
+z_dims = '8.8.16.16.32.32.64.64.128.128.256'
+epochs = '1.1.1.1.1.1.1.1.1.1.1'
+g_layers = '2.4.4.6.6.8.8.10.10.12.12'
+d_layers = '3.5.5.7.7.9.9.11.11.13.13'
+output_dims = '4.8.8.16.16.32.32.64.64.128.128' 
 feature_map_shrink = 'n' # ['n', 'f'] generator
 feature_map_growth = 'n' # ['n', 'f'] discriminator
 spatial_map_shrink = 'n' # ['n', 'f'] discriminator
 spatial_map_growth = 'n' # ['n', 'f'] generator
+stage = 'f.i.f.i.f.i.f.i.f.i.f'
 loss = 'RaLS' # ['RaLS', 'ns', 'wa']
 z_distr = 'u' # ['u', 'g']
 activation = 'lrelu'
@@ -56,6 +57,8 @@ flags.DEFINE_string("spatial_map_shrink", spatial_map_shrink,
     "How fast the spatial size should decrease in the discriminator")
 flags.DEFINE_string("spatial_map_growth", spatial_map_growth,
     "How fast the spatial size should increase in the generator")
+flags.DEFINE_string("stage", stage,
+    "Stage of GAN")
 flags.DEFINE_string("loss", loss,
     "Loss function")
 flags.DEFINE_string("z_distr", z_distr,
@@ -103,6 +106,7 @@ def main(_):
         feature_map_growth = FLAGS.feature_map_growth,
         spatial_map_shrink = FLAGS.spatial_map_shrink,
         spatial_map_growth = FLAGS.spatial_map_growth,
+        stage = FLAGS.stage,
         loss = FLAGS.loss,
         z_distr = FLAGS.z_distr,
         activation = FLAGS.activation,

@@ -27,6 +27,18 @@ def show_all_variables():
     model_vars = tf.trainable_variables()
     slim.model_analyzer.analyze_vars(model_vars, print_info=True)
 
+def get_image_interpolate(image_path, input_height, input_width,
+              resize_height=128, resize_width=128,
+              crop=True, grayscale=False, alpha = 1):
+    image = imread(image_path, grayscale)
+    im1 = transform(image, input_height, input_width,
+                     resize_height, resize_width, crop)
+    im2 = transform(image, input_height, input_width,
+                     int(resize_height/2), int(resize_width/2), crop)
+    im2 = scipy.misc.imresize(
+            im2, [resize_height, resize_width], interp = 'nearest')
+
+    return im2*(1-alpha)+im1*alpha
 
 def get_image(image_path, input_height, input_width,
               resize_height=128, resize_width=128,

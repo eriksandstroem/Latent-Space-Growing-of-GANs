@@ -21,6 +21,7 @@ class growGAN(object):
 			feature_map_growth,
 			spatial_map_shrink,
 			spatial_map_growth,
+			stage,
 			loss,
 			z_distr,
 			activation,
@@ -49,6 +50,7 @@ class growGAN(object):
 		self.feature_map_growth = feature_map_growth
 		self.spatial_map_shrink = spatial_map_shrink
 		self.spatial_map_growth = spatial_map_growth
+		self.stage = stage
 		self.loss = loss
 		self.z_distr = z_distr
 		self.activation = activation 
@@ -79,6 +81,7 @@ class growGAN(object):
 		self.d_layers = list(map(int, self.d_layers))
 		self.output_dims = self.output_dims.split('.')
 		self.output_dims = list(map(int, self.output_dims))
+		self.stage = self.stage.split('.')
 
 		nbrCycles = len(self.z_dims)
 
@@ -88,6 +91,21 @@ class growGAN(object):
 		run_config.gpu_options.visible_device_list=str(self.gpu)
 		for i in range(nbrCycles):
 			print('cycle start: ', i+1)
+
+			if i >= 1:
+				oldSpecs = {
+					"z_dim" : self.z_dims[i-1],
+					"g_layers" : self.g_layers[i-1],
+					"d_layers" : self.d_layers[i-1],
+					"feature_map_shrink" : self.feature_map_shrink,
+					"feature_map_growth" : self.feature_map_growth,
+					"spatial_map_shrink" : self.spatial_map_shrink,
+					"spatial_map_growth" : self.spatial_map_growth,
+					"stage" : self.stage[i-1],
+					"output_dims" : self.output_dims[i-1]
+				}
+			else:
+				oldSpecs = {}
 
 			with tf.Session(config=run_config) as sess: 
 				subgan = subGAN(
@@ -100,6 +118,7 @@ class growGAN(object):
 					feature_map_growth = self.feature_map_growth,
 					spatial_map_shrink = self.spatial_map_shrink,
 					spatial_map_growth = self.spatial_map_growth,
+					stage = self.stage[i],
 					loss = self.loss,
 					z_distr = self.z_distr,
 					activation = self.activation,
@@ -110,14 +129,15 @@ class growGAN(object):
 					epsilon = self.epsilon,
 					batch_size = self.batch_size,
 					sample_num = self.sample_num,
-					input_size = self.output_dims[i],
+					input_size = 128,
 					output_size = self.output_dims[i],
 					g_batchnorm = self.g_batchnorm,
 					d_batchnorm = self.d_batchnorm,
 					normalize_z = self.normalize_z,
 					crop = self.crop,
 					visualize = self.visualize,
-					model_dir = self.model_dir)
+					model_dir = self.model_dir,
+					oldSpecs = oldSpecs)
 
 
 				if self.trainflag:
