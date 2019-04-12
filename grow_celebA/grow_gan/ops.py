@@ -35,13 +35,21 @@ class batch_norm(object):
             self.name = name
 
     def __call__(self, x, train=True):
+        bn_init = {
+            'beta': tf.constant_initializer(0.0),
+            'gamma': tf.constant_initializer(1.0),
+            'moving_mean': tf.constant_initializer(0.0),
+            'moving_variance': tf.constant_initializer(1.0),
+}
         return tf.contrib.layers.batch_norm(x,
                                             decay=self.momentum,
                                             updates_collections=None,
-                                            epsilon=self.epsilon,
+                                            epsilon=0, #self.epsilon ska in här sen
                                             scale=True,
                                             is_training=train,
-                                            scope=self.name)
+                                            scope=self.name,
+                                            param_initializers=bn_init
+                                            )
 
 
 def conv_cond_concat(x, y):
@@ -51,17 +59,16 @@ def conv_cond_concat(x, y):
     return concat([
         x, y * tf.ones([x_shapes[0], x_shapes[1], x_shapes[2], y_shapes[3]])], 3)
 
-def conv4x4(input_, output_dim, batch_size, name = 'g_h1'):
+def conv4x4(input_, output_dim, batch_size, name):
     with tf.variable_scope(name):
         fan_in = output_dim//(4*4)
         stddev = np.sqrt(2/fan_in).astype(np.float32)
-        dense = tf.layers.dense(input_, output_dim, activation=None, 
-            use_bias=False, name = name,
+        dense = tf.layers.dense(input_, output_dim, activation=None, name =None, use_bias=False,
             kernel_initializer=tf.initializers.random_normal(0,stddev=stddev))
 
         biases = tf.get_variable(
         'biases', [output_dim//(4*4)], initializer=tf.constant_initializer(0.0))
-        dense = tf.reshape(dense, [batch_size, 4, 4, output_dim//(4*4)]) #[batch_size, 256, 4, 4]
+        dense = tf.reshape(dense, [-1, 4, 4, output_dim//(4*4)]) #[batch_size, 256, 4, 4]
         dense = tf.nn.bias_add(dense, biases)
         #dense = apply_bias(dense)
 
@@ -86,7 +93,7 @@ def upscale2d(x, factor=2):
         s = x.shape
         x = tf.reshape(x, [-1, s[1], s[2], 1, s[3], 1])
         x = tf.tile(x, [1, 1, factor, factor, 1, 1])
-        x = tf.reshape(x, [s[0], s[1]*factor, s[2]*factor, s[3]])
+        x = tf.reshape(x, [-1, s[1]*factor, s[2]*factor, s[3]]) # s[0] on first location in shape before
         return x
 
 def downscale2d(x, factor=2):
@@ -107,8 +114,7 @@ def conv2d(input_, output_dim,
 
         biases = tf.get_variable(
             'biases', [output_dim], initializer=tf.constant_initializer(0.0))
-        #conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
-        conv = tf.nn.bias_add(conv, biases) #TEST
+        conv = tf.nn.bias_add(conv, biases)
         #conv = apply_bias(conv, biases)
 
         return conv
@@ -132,8 +138,7 @@ def conv2dVALID(input_, output_dim,
 
         biases = tf.get_variable(
             'biases', [output_dim], initializer=tf.constant_initializer(0.0))
-        #conv = tf.reshape(tf.nn.bias_add(conv, biases), conv.get_shape())
-        conv = tf.nn.bias_add(conv, biases) #TEST
+        conv = tf.nn.bias_add(conv, biases)
         #conv = apply_bias(conv, biases)
 
         return conv

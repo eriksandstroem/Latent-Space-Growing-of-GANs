@@ -29,14 +29,20 @@ def show_all_variables():
 
 def get_image_interpolate(image_path, input_height, input_width,
               resize_height=128, resize_width=128,
-              crop=True, grayscale=False, alpha = 1):
+              crop=True, grayscale=False, alpha = 1.0):
     image = imread(image_path, grayscale)
     im1 = transform(image, input_height, input_width,
                      resize_height, resize_width, crop)
-    im2 = transform(image, input_height, input_width,
-                     int(resize_height/2), int(resize_width/2), crop)
+    if crop:
+        cropped_image = center_crop(
+            image, input_height, input_width,
+            int(resize_height/2), int(resize_width/2))
+    else:
+        cropped_image = scipy.misc.imresize(
+            image, [int(resize_height/2), int(resize_width/2)])
     im2 = scipy.misc.imresize(
-            im2, [resize_height, resize_width], interp = 'nearest')
+            cropped_image, [resize_height, resize_width], interp = 'nearest')
+    im2 = np.array(im2) / 127.5 - 1.
 
     return im2*(1-alpha)+im1*alpha
 
