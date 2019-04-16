@@ -20,6 +20,8 @@ class subGAN(object):
 		epochs,
 		g_layers,
 		d_layers,
+		useAlpha,
+		useBeta,
 		feature_map_shrink,
 		feature_map_growth,
 		spatial_map_shrink,
@@ -50,6 +52,8 @@ class subGAN(object):
 		self.epochs = epochs
 		self.g_layers = g_layers
 		self.d_layers = d_layers
+		self.useAlpha = useAlpha
+		self.useBeta = useBeta
 		self.feature_map_shrink = feature_map_shrink
 		self.feature_map_growth = feature_map_growth
 		self.spatial_map_shrink = spatial_map_shrink
@@ -96,14 +100,15 @@ class subGAN(object):
 		inputs = self.inputs
 
 		self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
-		self.alpha = tf.placeholder(tf.float32, shape=(), name ='alpha') 
+		self.alpha = tf.placeholder(tf.float32, shape=(), name = 'alpha')
+		self.beta = tf.placeholder(tf.float32, shape=(), name = 'beta')
 
 		self.G = G(self.z, batch_size= self.batch_size, reuse = False, bn = self.g_batchnorm, layers = self.g_layers, activation = self.activation, output_dim = self.output_size,
-			feature_map_shrink = self.feature_map_shrink, spatial_map_growth = self.spatial_map_growth, stage = self.stage, alpha = self.alpha)
+			feature_map_shrink = self.feature_map_shrink, spatial_map_growth = self.spatial_map_growth, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta)
 		self.D_real, self.D_real_logits = D(inputs, batch_size = self.batch_size, reuse = False, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, z_dim = self.z_dim)
+			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
 		self.D_fake, self.D_fake_logits = D(self.G, batch_size = self.batch_size, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, z_dim = self.z_dim)
+			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
 
 
 		"""loss function"""
@@ -125,14 +130,15 @@ class subGAN(object):
 			self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits,labels=tf.ones_like(self.D_fake_logits)))
 		elif self.loss == 'wa':
 			hyperparameter = 10
-			beta = tf.random_uniform(shape=[self.batch_size,1,1,1],minval=0., maxval=1.)
+			gamma = tf.random_uniform(shape=[self.batch_size,1,1,1],minval=0., maxval=1.)
 			#beta = tf.ones([batch_size,1,1,1],dtype=tf.float32)
-			xhat = tf.add( tf.multiply(beta,self.inputs), tf.multiply((1-beta),self.G))
+			xhat = tf.add( tf.multiply(gamma,self.inputs), tf.multiply((1-gamma),self.G))
 
 			_, D_xhat = D(xhat, batch_size = self.batch_size, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, z_dim = self.z_dim)
+			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
 
-			gradients = tf.gradients(D_xhat, xhat)[0]
+			gradients = tf.gradients(D_xhat, xhat)[0] # is different between arch 1 and 2. Strange. The inputs are of different size, but just an upsampled version of the lower resolution version. Maybe that's why.
+			# Since we take the gradient wrt xhat which is 4 times larger, when we sum the squares of gradients for each pixel we should get a larger gradient penalty for the larger image.
 			#print('xhatshape', xhat.shape)_sample
 			#print('idx: ', idx)
 			#print('gradientdim', gradients) #(256,1,?,2) same as xhat
@@ -154,11 +160,11 @@ class subGAN(object):
 		inputs_sample = self.inputs_sample
 
 		self.sampler = G(self.z, batch_size= self.sample_num, reuse = True, bn = self.g_batchnorm, layers = self.g_layers, activation = self.activation, output_dim = self.output_size,
-			feature_map_shrink = self.feature_map_shrink, spatial_map_growth = self.spatial_map_growth, stage = self.stage, alpha = self.alpha)
+			feature_map_shrink = self.feature_map_shrink, spatial_map_growth = self.spatial_map_growth, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta)
 		self.D_real_sample, self.D_real_logits_sample = D(inputs_sample, batch_size = self.sample_num, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, z_dim = self.z_dim)
+			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
 		self.D_fake_sample, self.D_fake_logits_sample = D(self.G, batch_size = self.sample_num, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, z_dim = self.z_dim)
+			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
 
 
 		if self.loss == 'RaLS':
@@ -177,12 +183,12 @@ class subGAN(object):
 			self.g_loss_sample = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits_sample,labels=tf.ones_like(self.D_fake_logits_sample)))
 		elif self.loss == 'wa':
 			hyperparameter = 10
-			beta = tf.random_uniform(shape=[self.sample_num,1,1,1],minval=0., maxval=1.)
+			gamma = tf.random_uniform(shape=[self.sample_num,1,1,1],minval=0., maxval=1.)
 			#beta = tf.ones([batch_size,1,1,1],dtype=tf.float32)
-			xhat = tf.add( tf.multiply(beta,self.inputs_sample), tf.multiply((1-beta),self.sampler))
+			xhat = tf.add( tf.multiply(gamma,self.inputs_sample), tf.multiply((1-gamma),self.sampler))
 
 			_, D_xhat = D(xhat, batch_size = self.sample_num, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-				feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, z_dim = self.z_dim)
+				feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
 
 
 			gradients = tf.gradients(D_xhat, xhat)[0]
@@ -250,9 +256,10 @@ class subGAN(object):
 		sample_z = np.full((self.sample_num, self.z_dim), 0.1).astype(np.float32)
 
 		alpha = np.float32(0.0)
+		beta = np.float32(0.0)
 
 		sample_files = self.data[0:self.sample_num]
-		if self.stage == 'f':
+		if self.useAlpha == 'n':
 			sample = [
 				get_image(
 					sample_file,
@@ -261,7 +268,7 @@ class subGAN(object):
 					resize_height=self.output_size,
 					resize_width=self.output_size,
 					crop=self.crop) for sample_file in sample_files]
-		elif self.stage == 'i':
+		elif self.useAlpha == 'y':
 			sample = [
 			get_image_interpolate(
 				sample_file,
@@ -269,15 +276,13 @@ class subGAN(object):
 				input_width=self.input_size,
 				resize_height=self.output_size,
 				resize_width=self.output_size,
-				crop=self.crop, alpha = alpha) for sample_file in sample_files]
+				crop=self.crop, alpha = 1.0) for sample_file in sample_files]
 
 		sample_inputs = np.array(sample).astype(np.float32)
 
 		counter = 0
 		start_time = time.time()
 
-		# RESTORE PREVIOUS MODEL IF THERE EXIST ONE
-		# RESTORES CURRENT MODEL IF IT HAS BEEN INTERRUPTED AND LOADS COUNTER
 		could_load, model_counter, message = self.load(weight_init = self.weight_init)
 		if could_load:
 			counter = model_counter
@@ -285,24 +290,15 @@ class subGAN(object):
 		else:
 			print(" [!] " + message)
 
-
-		# could_load, model_counter = self.load()
-		# if could_load:
-		# 	counter = model_counter
-		# 	print(" [*] Load SUCCESS")
-		# else:
-		# 	print(" [!] Load failed...")
-
 		for epoch in xrange(1):
 
 
-			#np.random.shuffle(self.data)
-
+			# np.random.shuffle(self.data)
 			batch_idxs = len(self.data) // self.batch_size
 
 			for idx in xrange(0, batch_idxs):
 				batch_files = self.data[0 * self.batch_size:(0 + 1) * self.batch_size] # replace 0 with idx
-				if self.stage == 'f':
+				if self.useAlpha == 'n':
 					batch = [
 						get_image(
 							batch_file,
@@ -311,7 +307,7 @@ class subGAN(object):
 							resize_height=self.output_size,
 							resize_width=self.output_size,
 							crop=self.crop) for batch_file in batch_files]
-				elif self.stage == 'i':
+				elif self.useAlpha == 'y':
 					batch = [
 						get_image_interpolate(
 							batch_file,
@@ -338,30 +334,33 @@ class subGAN(object):
 				# self.writer.add_summary(summary_str, counter)
 
 				errD_fake = self.d_loss_fake.eval(
-					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha})
+					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
 				errD_real = self.d_loss_real.eval(
-					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha})
+					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
 				errG = self.g_loss.eval(
-					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha})
-				d_real_logits = self.D_real_logits.eval({self.inputs: batch_images, self.alpha: alpha})
-				d_fake_logits = self.sess.run(self.D_fake_logits, feed_dict={self.z: batch_z, self.alpha: alpha})
-				g_out = self.sess.run(self.G, feed_dict={self.z: batch_z, self.alpha: alpha})
+					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+				d_real_logits = self.D_real_logits.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+				d_fake_logits = self.D_fake_logits.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+				g_out = self.G.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
                 
 				print(
 					"Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" %
 						(epoch, idx, batch_idxs, time.time() - start_time, errD_real, errG)) # errD_fake + errD_real
-				# print(g_out)# errD_fake + errD_real
+				print('g_out: ', g_out)# errD_fake + errD_real
+				print('d_fake_logits: ', d_fake_logits)
 				print('d_real_logits: ', d_real_logits)
+				print('errD_fake: ', errD_fake)
+				
 
-				# Update D network
+				# # Update D network
 				# _, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
-				# 	self.inputs: batch_images, self.z: batch_z, self.alpha: alpha})
+				# 	self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
 
 				# self.writer.add_summary(summary_str, counter)
 
 				# # Update G network
 				# _, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
-				# self.inputs: batch_images, self.z: batch_z, self.alpha: alpha})
+				# 	self.z: batch_z, self.alpha: alpha, self.beta: beta})
 
 				# self.writer.add_summary(summary_str, counter)
 
@@ -370,7 +369,7 @@ class subGAN(object):
 						[self.sampler, self.d_loss_sample, self.g_loss_sample, self.D_real_sample, self.D_fake_sample],
 						feed_dict={
 							self.z: sample_z,
-							self.inputs_sample: sample_inputs, self.alpha: alpha,
+							self.inputs_sample: sample_inputs, self.alpha: alpha, self.beta: beta
 						},
 					)
 					if not os.path.exists('../{}/{}'.format('train_samples', self.model_dir_full)):
@@ -382,29 +381,58 @@ class subGAN(object):
 							'train_samples', self.model_dir_full, epoch, idx))
 					print("[Sample] d_loss: %.8f, g_loss: %.8f" %
 						(d_loss, g_loss))
-				if np.mod(counter, 5) == 0:
-					# print('save!')
-					self.save(counter)
+				# if np.mod(counter, 5) == 0:
+					# self.save(counter)
+
+				# Update D network
+				_, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
+					self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+
+				self.writer.add_summary(summary_str, counter)
+
+				# Update G network
+				_, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
+					self.z: batch_z, self.alpha: alpha, self.beta: beta})
+
+				self.writer.add_summary(summary_str, counter)
+
 				counter += 1
-				# if alpha < 1:
-				# 	alpha = alpha + float(1/3000)
-				# 	print('alpha: ', alpha)
-				if idx == 5:  # REMOVE LATER!!!
-					# errD_fake = self.d_loss_fake.eval(
-					# 	{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha})
-					# errD_real = self.d_loss_real.eval(
-					# 	{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha})
-					# errG = self.g_loss.eval(
-					# 	{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha})
-					# d_real_logits = self.D_real_logits.eval({self.inputs: batch_images, self.alpha: alpha})
-					# d_fake_logits = self.sess.run(self.D_fake_logits, feed_dict={self.z: batch_z, self.alpha: alpha})
-					# g_out = self.sess.run(self.G, feed_dict={self.z: batch_z, self.alpha: alpha})
+				if alpha < 1:
+					alpha = alpha + 0.5
+					print('alpha: ', alpha)
+				if beta < 1:
+					beta = beta + 0.5
+				if idx == 2:  # REMOVE LATER!!!
+					alpha = 1.0
+					beta = 1.0
+					errD_fake = self.d_loss_fake.eval(
+						{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					errD_real = self.d_loss_real.eval(
+						{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					errG = self.g_loss.eval(
+						{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					d_real_logits = self.D_real_logits.eval({self.inputs: batch_images, self.alpha: alpha, self.beta: beta})
+					d_fake_logits = self.sess.run(self.D_fake_logits, feed_dict={self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					g_out = self.sess.run(self.G, feed_dict={self.z: batch_z, self.alpha: alpha, self.beta: beta})
 	                
 					print(
 						"Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" %
 							(epoch, idx, batch_idxs, time.time() - start_time, errD_real, errG)) # errD_fake + errD_real
-					# print(g_out)# errD_fake + errD_real
-					# print('d_real_logits: ', d_real_logits)
+					print('d_fake_logits: ', d_fake_logits)
+					print('d_real_logits: ', d_real_logits)
+					print('errD_fake: ', errD_fake)
+					samples, d_loss, g_loss, D_real, D_fake = self.sess.run(
+						[self.sampler, self.d_loss_sample, self.g_loss_sample, self.D_real_sample, self.D_fake_sample],
+						feed_dict={
+							self.z: sample_z,
+							self.inputs_sample: sample_inputs, self.alpha: alpha, self.beta: beta
+						},
+					)
+					print("[Sample] d_loss: %.8f, g_loss: %.8f" %
+						(d_loss, g_loss))
+					g_out = self.sess.run(self.G, feed_dict={self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					print(g_out)
+					self.save(counter)
 					break
 
     # @property
@@ -450,44 +478,11 @@ class subGAN(object):
 				# print('tensor name: ', tensor_name)
 			return False, 0, 'First Training Cycle'
 	
-		# for idx, z in enumerate(zList):
-		# 	z = z.split('_')
-		# 	z = z[2]
-		# 	z = int(z[1:])
-		# 	zList[idx] = z
-		# 	print(z)
-		# z = max(zList)
-		# if os.path.exists('../models/'+self.model_dir+'/stage_i_z'+str(z)):
-		# 	path = '../models/'+self.model_dir+'/stage_i_z'+str(z)
-		# 	stage = 'i'
-		# elif os.path.exists('../models/'+self.model_dir+'/stage_f_z'+str(z)):
-		# 	path = '../models/'+self.model_dir+'/stage_f_z'+str(z)
-		# 	stage = 'f'
 		old_model_location = '../models/'+self.model_dir+'/stage_'+self.oldSpecs["stage"]+'_z'+str(self.oldSpecs['z_dim'])
 		ckpt = tf.train.get_checkpoint_state(old_model_location)
 
 		ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
 		old_model_location = old_model_location + '/' + ckpt_name
-		# print('old_model_location: ', old_model_location)
-			# self.saver.restore(self.sess, os.path.join('../models',
-			#  path, ckpt_name))
-		#counter = int(next(re.finditer("(\d+)(?!.*\d)", ckpt_name)).group(0))
-
-			# print(" [*] Success to read {}".format(ckpt_name))
-			# return True, counter, 'Continue Training Model with z Dimension ' + str(z) + ' and stage ' + stage
-
-		# z_dims = '8.8.16.16.32.32.64.64.128.128.256'
-		# g_layers = '2.4.4.6.6.8.8.10.10.12.12'
-		# d_layers = '3.5.5.7.7.9.9.11.11.13.13'
-		# output_dims = '4.8.8.16.16.32.32.64.64.128.128' 
-		# feature_map_shrink = 'n' # ['n', 'f'] generator
-		# feature_map_growth = 'n' # ['n', 'f'] discriminator
-		# spatial_map_shrink = 'n' # ['n', 'f'] discriminator
-		# spatial_map_growth = 'n' # ['n', 'f'] generator
-		# stage = 'f.i.f.i.f.i.f.i.f.i.f'
-
-		# goal: divide the restoration in to cases depending on whether the layers grow or the channels. We start with growing the layers and this is the
-		# simplest to solve. We can write the structure for the two cases first though. 
 
 		if self.stage == 'i':
 			# restore the old layers and add two new layers in generator and discriminator
@@ -533,8 +528,6 @@ class subGAN(object):
 			# print('done')
 			saver = tf.train.Saver(restore_dict)
 			saver.restore(self.sess, old_model_location)
-					# self.saver object cannot be created above. We need to define the saver object here
-					# with the correct dictionary input so that we can restore afterwards.
 
 			return True, 0, 'Added two more layers and restored the old layers, doubling the output dimension'
 		elif self.stage == 'f':
@@ -572,14 +565,6 @@ class subGAN(object):
 			saver = tf.train.Saver(restore_dict)
 			saver.restore(self.sess, old_model_location)
 
-
-			# # HOW TO RESTURN THE VARIABLES IN A CHECKPOINT FILE
-			# reader = tf.train.NewCheckpointReader(old_model_location)
-			# var_to_shape_map = reader.get_variable_to_shape_map()
-			# # for key in var_to_shape_map:
-			#     # print("tensor_name: ", key)
-			#     # print(reader.get_tensor(key))
-
 			for tensor_name, tensorValue in partial_restore_dict.items():
 				# retrieve tensor from current graph
 				print('tensorname: ', tensor_name)
@@ -588,19 +573,27 @@ class subGAN(object):
 				print('newtensorshape: ', tensor.shape)
 				tensor_name_split = tensor_name.split('/')
 				if tensor_name_split[-1] == 'bias':
-					assign_op = tf.assign(tensor, tensorValue)
+					assign_op = tf.assign(tensor, tensorValue) # why don't we have this in the dictionary directly?
 					# self.sess.run(assign_op)
 				elif tensor_name_split[-1] == 'biases':	
 					if tensorValue.shape == tensor.shape:
-						assign_op = tf.assign(tensor, tensorValue)
+						assign_op = tf.assign(tensor, tensorValue)  # why don't we have this in the dictionary directly?
 						# self.sess.run(assign_op)
 					else:
 						assign_op = tf.assign(tensor, np.append(tensorValue, np.zeros((1,tensorValue.shape[0]))))
 						# self.sess.run(assign_op)
 				elif tensor_name_split[-1] == 'kernel':
 					if tensorValue.shape[1] != 1:
-						temp = np.concatenate((tensorValue, np.zeros((tensorValue.shape[0],tensorValue.shape[1]))), axis = 0)
-						temp = np.concatenate((temp, np.zeros((temp.shape[0],temp.shape[1]))), axis = 1)
+						filterSize = tensorValue.shape[1]
+						maps = tensorValue.shape[0]
+						channels = maps
+						imSize = tensorValue.shape[1]/channels
+						w = int(np.sqrt(imSize))
+						h = w
+						tensorValue = np.reshape(tensorValue, [maps, w, h, channels])
+						temp = np.concatenate((tensorValue, np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+						temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))),axis = 0)
+						temp = np.reshape(temp, [maps*2,filterSize*2])
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					else: 
@@ -612,164 +605,26 @@ class subGAN(object):
 					# double fourth axis
 					if tensorValue.shape[2] == tensor.shape[2]:
 						temp = np.concatenate((tensorValue,np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					# double third axis
 					elif tensorValue.shape[3] == tensor.shape[3]:
 						temp = np.concatenate((tensorValue,np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
+						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])), tensorValue), axis = 2)
+						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					# double both third and fourth axis
 					else:
 						temp = np.concatenate((tensorValue,np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
 						temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+						# temp = np.concatenate((np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3])), temp), axis = 2)
+						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+						# temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
 						assign_op = tf.assign(tensor, temp)
 				
 				self.sess.run(assign_op)
 
-				# depending on whether the name ends with w, bias, biases, kernel you treat each case
-				# assign_op = tf.assign(tensor, np.array([np.squeeze(tensorValue), np.squeeze(np.zeros())]))
-					# self.sess.run(assign_op)
-
-
-
-# with tf.Session(config = config) as sess:
-#     sess.run(tf.global_variables_initializer())
-#     saver = tf.train.Saver(restore_dict)
-#     saver.restore(sess, old_model_location) # RESTORA DE LAGER SOM HAR EXAKT LIKA MÅNGA VIKTER VID VÄXNINGEN
-#     biash1 = tf.get_default_graph().get_tensor_by_name("GAN/Generator/h1/bias:0")
-#     kernelh1 = tf.get_default_graph().get_tensor_by_name("GAN/Generator/h1/kernel:0")
-#     assign_opbias = tf.assign(biash1, biash1_old)
-#     if arg.init == 'z':
-#         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.zeros((1,nodes)))]))
-#     elif arg.init == 'n':
-#         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.random.normal(0,0.01,(1,nodes)))])) # experiment with different std
-#     elif arg.init == 'u':
-#         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.random.uniform(-0.1,0.1,(1,nodes)))])) # experiment with different range
-#     elif arg.init == 'x':
-#         limit = np.sqrt(6/(2+nodes))
-#         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.random.uniform(-limit,limit,(1,nodes)))]))
-#     sess.run(assign_opbias)   
-#     sess.run(assign_opbias)
-#     sess.run(assign_opkernel)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 			return True, 0, 'Added feature channels and initialized the new channels with '+weight_init+', doubled the latent space dimension'
-			#'now we should load z dim ' + str(self.oldSpecs['z_dim']) +' and stage ' +self.oldSpecs['stage']
-
-# 			# algoritmen ska vara väldigt flexibel och kunna växa från vilket nätverk som helst till ett annat där vikterna delas mellan nätverken dvs. det vore coolt om man kan träna
-# 			# ett stort nätverk och restora ett mindre, men vet ej om det bara blir bökigt. Ska vi tex. anta att nästa modell har dubbel z-dim? inget antagande om antal lager kan göras
-# 			# vi kan exempelvis restora hela gamla modellen och spara ner alla variabler som vi vill restora där det bara är ett subset av vikterna i ett visst lager vi vill restora.
-# 			# om vi vill restora ett lager rakt av så går det att göra smidiagare.
-# 			# HUR TAR JAG REDA PÅ SPECSEN AV FÖRRA NÄTVERKET? DET KÄNNS KRITISTK FÖR ATT VETA VILkA NYA VIKTER SOM SKA LÄGGA TILL OSV. är enkelt att göra genom att feeda detta då subGAN skapas.
-# 			# rita ner ditt drömexempel på hur det ska växas och tänk utifrån det hur vi ska designa algoritmen. Drömexempel klart
-# 			# specs: z_dims = 8.16.32.64.128.256, g:{f/n, n}, d:{n,n}, g_layers = 2.4.6.8.10.12, d_layers = 3.5.7.9.11.13, output_dims = 4.8.16.32.64.128
-# 			# smoothness lägger jag till senare
-# 		 	# assume the old specs are know via porting from ols subGAN. What factors need to be taken into account and in what order should I restore? We have layers, spatial stuff and feature maps. hmmm
-# 		 	# THE IDEA: go through the layers. Of the new model. Each layer that exists (per number) in the old model) will need to be saved (the parameters) in a directory - valuie and name. The layers 
-# 		 	# than don't exist in the old model but in the new, we only need the name maybe for, or maybe nothing for since those will just be initialized normally I guess? Or maybe to zero too. But we really need
-# 		 	# the smooth shortcut if we initialize to zero so we get something out. If we initialize to not zero we get somethgin out of the model but it will not be the same as before growing.
-# 		 	# Think, however, about the fact that we want to be able to grow from the same network to the same new one (technically). This means we need to go deeper. We need to find what really characterizes a
-# 		 	# layer and compare the old layer parameters vs the new layer parameters with the same name. If the number of parameters are the same then they are identical and we will just restore the layer
-# 		 	# in the convenient way. If the parameter numbers are different we restore according to our plan.
-# 		 	# This way, we should end up with two directories of some sort where one is for resotring the convenient way and the other contains the values we need for restoring in a later session. But 
-# 		 	# how can we study two graphs at the same time with names of layers that are identical? Seems impossible.MAybe the shape of the layer kernel is an easier metric to use?
-
-# 		 	# CHECKING FOR ADDED
-# 		 	# LAYERS: The name of the layer does not exist in the old model, but in the new only
-# 		 	# CHANNELS: The shape of the layer is different between the old and new model
-
-# 		 	# HOW TO DEAL WITH THE STRANGE ONES: Generator: conv1x1 and conv4x4. Discriminator: conv4x4 and FC.
-# 		 	# Think about the fading in problem of only one layer at each growing cycle
-
-# 		 	# I realize that it is too aggressive to grow two layers at once. In proGAN they only grow one layer at each iterations with a fading cycle of 4 epochs and 4 more epochs for stabilization. 
-# 		 	# This is needed. Therefore I will need to change the dream example to account for growing only one layer at a time. This should be fine. I can just put in the generator the 1x1 conv after 
-# 		 	# the first 3x3 conv. instead of after 2 conv3x3 like I usually do. For the discriminator we need the FC and conv4x4 as a package I believe. Draw the growing cycles again, first with fixed z_dim.
-# 		 	# The next thing to take into account here is the growing of the z_dimension. It seems too aggressive to grow the z dimension at the same time as the layer dimension so we should probbly keep them separated
-# 		 	# such that they can be learned in a stable manner.
-
-
-# # FÖR ATT FÅ TAG PÅ BIAS OCH KERNEL SOM VARiABLER
-# saver = tf.train.Saver(tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,scope="GAN/Generator"))
-# with tf.Session(config = config) as sess:
-#     sess.run(tf.global_variables_initializer())
-#     saver.restore(sess, old_model_location) 
-#     biash1_old = sess.run(tf.get_default_graph().get_tensor_by_name("GAN/Generator/h1/bias:0")) 
-#     kernelh1_old = sess.run(tf.get_default_graph().get_tensor_by_name("GAN/Generator/h1/kernel:0"))
-#     if arg.w == 'yes':
-#         # print('shape biash1_old: ', np.shape(biash1_old)) # REMOVE LATER
-#         # print('shape kernelh1_old: ', np.shape(kernelh1_old)) # REMOVE LATER
-#         # print('len biash1_old: ', len(biash1_old)) # REMOVE LATER
-#         # print('len kernelh1_old: ', len(kernelh1_old)) # REMOVE LATER
-#         # print('shape normal: ', np.shape(np.random.normal(0,0.01,(1,len(biash1_old))))) # REMOVE LATER
-#         biash1_old = biash1_old + np.squeeze(np.random.normal(0,0.001,np.shape(biash1_old))) # fiddle around with the standard devation
-#         kernelh1_old = kernelh1_old + np.squeeze(np.random.normal(0,0.001,np.shape(kernelh1_old))) # fiddle around with the standard devation
-#     # print('GAN/Generator/h1/bias:0 old:', biash1_old) # REMOVE LATER
-#     # print('GAN/Generator/h1/kernel:0 old:', kernelh1_old) # REMOVE LATER
-#     # biash2_old = sess.run(tf.get_default_graph().get_tensor_by_name("GAN/Generator/h2/bias:0")) # REMOVE LATER
-#     # kernelh2_old = sess.run(tf.get_default_graph().get_tensor_by_name("GAN/Generator/h2/kernel:0")) # REMOVE LATER
-#     # print('GAN/Generator/h2/bias:0 old:', biash2_old) # REMOVE LATER
-#     # print('GAN/Generator/h2/kernel:0 old:', kernelh2_old) # REMOVE LATER
-#     # print('G_sample old: ', sess.run(G_sample, {Z : Z_batch})) # REMOVE LATER
-
-
-# # reset graph
-# tf.reset_default_graph()
-
-# # nätverket definieras här
-
-# reader = tf.train.NewCheckpointReader(old_model_location)
-# # create dictionary to restore all weights but the first layer weights
-# # I CAN USE THIS METHOD WHEN I KNOW WHAT LAYERS CONTAIN THE SAME WEIGHTS, BUT FIRST I NEED TO FIND THAT SOMEHOW
-# restore_dict = dict()
-# for v in tf.trainable_variables():
-#     tensor_name = v.name.split(':')[0]
-#     print('tensor name: ', tensor_name)
-#     if reader.has_tensor(tensor_name) and 'Generator/h1' not in tensor_name:
-#         print('to restore: yes')
-#         restore_dict[tensor_name] = v
-#     else:
-#         print('to restore: no')
-
-# # SLUNGA IN DE GAMLA VÄRDENA I DEN NYA GRAFEN.
-#     # architecture
-# arch = arg.arch.split('.')
-# layers = int(arch[0])
-# nodes = int(arch[1])
-
-# with tf.Session(config = config) as sess:
-#     sess.run(tf.global_variables_initializer())
-#     saver = tf.train.Saver(restore_dict)
-#     saver.restore(sess, old_model_location) # RESTORA DE LAGER SOM HAR EXAKT LIKA MÅNGA VIKTER VID VÄXNINGEN
-#     biash1 = tf.get_default_graph().get_tensor_by_name("GAN/Generator/h1/bias:0")
-#     kernelh1 = tf.get_default_graph().get_tensor_by_name("GAN/Generator/h1/kernel:0")
-#     assign_opbias = tf.assign(biash1, biash1_old)
-#     if arg.init == 'z':
-#         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.zeros((1,nodes)))]))
-#     elif arg.init == 'n':
-#         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.random.normal(0,0.01,(1,nodes)))])) # experiment with different std
-#     elif arg.init == 'u':
-#         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.random.uniform(-0.1,0.1,(1,nodes)))])) # experiment with different range
-#     elif arg.init == 'x':
-#         limit = np.sqrt(6/(2+nodes))
-#         assign_opkernel = tf.assign(kernelh1, np.array([np.squeeze(kernelh1_old), np.squeeze(np.random.uniform(-limit,limit,(1,nodes)))]))
-#     sess.run(assign_opbias)   
-#     sess.run(assign_opbias)
-#     sess.run(assign_opkernel)

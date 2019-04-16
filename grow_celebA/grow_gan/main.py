@@ -13,17 +13,14 @@ epochs = '1.1.1.1.1.1.1.1.1.1.1'
 g_layers = '2.4.4.6.6.8.8.10.10.12.12'
 d_layers = '3.5.5.7.7.9.9.11.11.13.13'
 output_dims = '4.8.8.16.16.32.32.64.64.128.128' 
-# z_dims = '8.16.32'
-# epochs = '1.1.1'
-# g_layers = '6.6.6'
-# d_layers = '7.7.7'
-# output_dims = '16.16.16' 
+useAlpha = 'n.y.n.y.n.y.n.y.n.y.n'
+useBeta = 'n.n.y.n.y.n.y.n.y.n.y'
+# useBeta = 'n.n.n.n.n.n.n.n.n.n.n'
 feature_map_shrink = 'n' # ['n', 'f'] generator
 feature_map_growth = 'n' # ['n', 'f'] discriminator
 spatial_map_shrink = 'n' # ['n', 'f'] discriminator
 spatial_map_growth = 'n' # ['n', 'f'] generator
 stage = 'f.i.f.i.f.i.f.i.f.i.f'
-# stage = 'f.i.f'
 loss = 'ns' # ['RaLS', 'ns', 'wa']
 z_distr = 'u' # ['u', 'g']
 activation = 'lrelu'
@@ -42,6 +39,7 @@ crop = True
 trainflag = True
 visualize = False
 
+
 model_dir = z_dims +'_'+ epochs +'_'+ g_layers +'_'+ d_layers +'_'+ output_dims +'_'+feature_map_shrink+feature_map_growth+spatial_map_shrink+spatial_map_growth+'_'+ loss +'_'+z_distr +'_'+ activation +'_'+ weight_init +'_'+ str(batch_size) +'_'+str(g_batchnorm) +'_'+ str(d_batchnorm) +'_'+ str(normalize_z)
 
 flags = tf.app.flags
@@ -55,6 +53,10 @@ flags.DEFINE_string("d_layers", d_layers,
     "List of layers to train each discriminator network cycle with")
 flags.DEFINE_string("output_dims", output_dims,
     "List of output dimensions to train each generator network cycle with")
+flags.DEFINE_string("useAlpha", useAlpha,
+    "Use spatial smoothing or not")
+flags.DEFINE_string("useBeta", useBeta,
+    "Use feature channel smoothing or not")
 flags.DEFINE_string("feature_map_shrink", feature_map_shrink,
     "How fast the nbr of feature maps should decrease in the generator")
 flags.DEFINE_string("feature_map_growth", feature_map_growth,
@@ -64,7 +66,7 @@ flags.DEFINE_string("spatial_map_shrink", spatial_map_shrink,
 flags.DEFINE_string("spatial_map_growth", spatial_map_growth,
     "How fast the spatial size should increase in the generator")
 flags.DEFINE_string("stage", stage,
-    "Stage of GAN")
+    "What stage the gan is at")
 flags.DEFINE_string("loss", loss,
     "Loss function")
 flags.DEFINE_string("z_distr", z_distr,
@@ -108,6 +110,8 @@ def main(_):
         g_layers = FLAGS.g_layers,
         d_layers = FLAGS.d_layers,
         output_dims = FLAGS.output_dims,
+        useAlpha = FLAGS.useAlpha,
+        useBeta = FLAGS.useBeta,
         feature_map_shrink = FLAGS.feature_map_shrink,
         feature_map_growth = FLAGS.feature_map_growth,
         spatial_map_shrink = FLAGS.spatial_map_shrink,

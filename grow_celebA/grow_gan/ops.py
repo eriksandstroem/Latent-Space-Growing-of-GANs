@@ -59,15 +59,60 @@ def conv_cond_concat(x, y):
     return concat([
         x, y * tf.ones([x_shapes[0], x_shapes[1], x_shapes[2], y_shapes[3]])], 3)
 
-def conv4x4(input_, output_dim, batch_size, name):
+
+def dense(input_, output_dim, name,
+            kernel_initializer, bias_initializer, useBeta = False, beta = 1):
+    with tf.variable_scope(name):
+
+        kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
+                            initializer=kernel_initializer)
+        biases = tf.get_variable(
+        'bias', [output_dim], initializer=bias_initializer)
+        if useBeta == 'y':
+            not_new = kernel[0:input_.get_shape()[-1]//2,:]
+            all_new = kernel[input_.get_shape()[-1]//2:,:]
+            all_new = beta*all_new
+
+            kernel = tf.concat((not_new, all_new), axis = 0, name = 'kernel')
+
+        input_ = tf.reshape(input_, [-1,input_.get_shape()[-1]])
+        dense = tf.matmul(input_, kernel)
+        dense = tf.nn.bias_add(dense, biases)
+
+        return dense
+
+def conv4x4(input_, output_dim, batch_size, name, useBeta = 'n', beta = 1):
     with tf.variable_scope(name):
         fan_in = output_dim//(4*4)
         stddev = np.sqrt(2/fan_in).astype(np.float32)
-        dense = tf.layers.dense(input_, output_dim, activation=None, name =None, use_bias=False,
-            kernel_initializer=tf.initializers.random_normal(0,stddev=stddev))
-
+        kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
+                            initializer=tf.initializers.random_normal(0,stddev=stddev))
         biases = tf.get_variable(
         'biases', [output_dim//(4*4)], initializer=tf.constant_initializer(0.0))
+        if useBeta == 'y':
+            partially_new = kernel[0:input_.get_shape()[-1]//2,:]
+            partially_new = tf.reshape(partially_new, [input_.get_shape()[-1]//2, 4, 4, output_dim//(4*4)])
+            partially_new_old = partially_new[:,:,:, 0:output_dim//(4*4*2)]
+            partially_new_new = partially_new[:,:,:, output_dim//(4*4*2):]
+            partially_new_new = beta*partially_new_new
+            partially_new = tf.concat((partially_new_old,partially_new_new), axis = 3)
+            partially_new = tf.reshape(partially_new, [input_.get_shape()[-1]//2, output_dim])
+
+            all_new = kernel[input_.get_shape()[-1]//2:,:]
+            all_new = beta*all_new
+
+            kernel = tf.concat((partially_new, all_new), axis = 0, name = 'kernel')
+
+            biases_old = biases[0:output_dim//2]
+            biases_new = biases[output_dim//2:]
+            biases_new = beta*biases_new
+            biases = tf.concat((biases_old,biases_new), axis = 0, name = 'biases')
+
+
+        dense = tf.matmul(input_, kernel)
+        # dense = tf.layers.dense(input_, output_dim, activation=None, name =None, use_bias=False,
+        #     kernel_initializer=tf.initializers.random_normal(0,stddev=stddev))
+
         dense = tf.reshape(dense, [-1, 4, 4, output_dim//(4*4)]) #[batch_size, 256, 4, 4]
         dense = tf.nn.bias_add(dense, biases)
         #dense = apply_bias(dense)
@@ -103,19 +148,60 @@ def downscale2d(x, factor=2):
         ksize = [1, factor, factor, 1]
         return tf.nn.avg_pool(x, ksize=ksize, strides=ksize, padding='VALID') #, data_format='NCHW') # NOTE: requires tf_config['graph_options.place_pruned_graph'] = True
 
+# def conv2d(input_, output_dim,
+#            k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
+#            name="conv2d"):
+#     with tf.variable_scope(name):
+#         w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
+#                             initializer=tf.initializers.random_normal(0,stddev=stddev))
+#         conv = tf.nn.conv2d(input_, w, strides=[
+#                             1, d_h, d_w, 1], padding='SAME') #, data_format='NCHW')
+
+#         biases = tf.get_variable(
+#             'biases', [output_dim], initializer=tf.constant_initializer(0.0))
+#         conv = tf.nn.bias_add(conv, biases)
+#         #conv = apply_bias(conv, biases)
+
+#         return conv
+
 def conv2d(input_, output_dim,
            k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
-           name="conv2d"):
+           name="conv2d", padding = 'SAME', useBeta = 'n', beta = 1, last = False, first =  False):
     with tf.variable_scope(name):
         w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
                             initializer=tf.initializers.random_normal(0,stddev=stddev))
-        conv = tf.nn.conv2d(input_, w, strides=[
-                            1, d_h, d_w, 1], padding='SAME') #, data_format='NCHW')
-
         biases = tf.get_variable(
-            'biases', [output_dim], initializer=tf.constant_initializer(0.0))
+                'biases', [output_dim], initializer=tf.constant_initializer(0.0))
+        if useBeta == 'y':
+            # if inputchannels = x, outputchannels = x/2, then the OJ was in: x/2 out x/4. This means that x/4 filters of depth x are completely new. This means that x/4 filters are the rest 
+            # and each filter has x/2 filter channels that come from the previously restored network. The last x/2 channels need to be multiplied by beta before the filter is used.
+            # the filter shape is [3,3,in,out] = [3,3,x,x/2]. We can split this into the two tensors of x/4 filters each.
+
+            partially_new = w[:,:,:,0:output_dim//2]
+            if first == False: # not used for the first grown layer in the discriminator
+                partially_new_old = partially_new[:,:,0:input_.get_shape()[-1]//2,:]
+                partially_new_new = partially_new[:,:,input_.get_shape()[-1]//2:,:]
+                partially_new_new = beta*partially_new_new
+                partially_new = tf.concat((partially_new_old,partially_new_new), axis = 2)
+
+            all_new = w[:,:,:,output_dim//2:] # we have established that sometimes this isn't zero, even though we want it to be always zero. This can happen if we in the model (now only generator) calls useBeta when 
+            # we shouldn't.
+            if last == False: # not used for the last grown layer in the generator
+                all_new = tf.scalar_mul(beta,all_new)
+                biases_old = biases[0:output_dim//2]
+                biases_new = biases[output_dim//2:]
+                biases_new = beta*biases_new
+                biases = tf.concat((biases_old,biases_new), axis = 0, name = 'biases')
+
+            w = tf.concat((partially_new, all_new), axis = 3, name = 'w')
+
+
+
+        conv = tf.nn.conv2d(input_, w, strides=[
+                            1, d_h, d_w, 1], padding=padding)
+
+
         conv = tf.nn.bias_add(conv, biases)
-        #conv = apply_bias(conv, biases)
 
         return conv
 
@@ -127,21 +213,21 @@ def apply_bias(x):
     else:
         return x + tf.reshape(b, [1, -1, 1, 1])
 
-def conv2dVALID(input_, output_dim,
-           k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
-           name="conv2d"):
-    with tf.variable_scope(name):
-        w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
-                            initializer=tf.initializers.random_normal(0,stddev=stddev))
-        conv = tf.nn.conv2d(input_, w, strides=[
-                            1, d_h, d_w, 1], padding='VALID') #, data_format='NCHW')
+# def conv2dVALID(input_, output_dim,
+#            k_h=5, k_w=5, d_h=2, d_w=2, stddev=0.02,
+#            name="conv2d"):
+#     with tf.variable_scope(name):
+#         w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
+#                             initializer=tf.initializers.random_normal(0,stddev=stddev))
+#         conv = tf.nn.conv2d(input_, w, strides=[
+#                             1, d_h, d_w, 1], padding='VALID') #, data_format='NCHW')
 
-        biases = tf.get_variable(
-            'biases', [output_dim], initializer=tf.constant_initializer(0.0))
-        conv = tf.nn.bias_add(conv, biases)
-        #conv = apply_bias(conv, biases)
+#         biases = tf.get_variable(
+#             'biases', [output_dim], initializer=tf.constant_initializer(0.0))
+#         conv = tf.nn.bias_add(conv, biases)
+#         #conv = apply_bias(conv, biases)
 
-        return conv
+#         return conv
 
 
 def deconv2d(input_, output_shape,

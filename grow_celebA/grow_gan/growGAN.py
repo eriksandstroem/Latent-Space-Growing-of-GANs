@@ -17,6 +17,8 @@ class growGAN(object):
 			g_layers,
 			d_layers,
 			output_dims,
+			useAlpha,
+			useBeta,
 			feature_map_shrink,
 			feature_map_growth,
 			spatial_map_shrink,
@@ -46,6 +48,8 @@ class growGAN(object):
 		self.g_layers = g_layers
 		self.d_layers = d_layers
 		self.output_dims = output_dims
+		self.useAlpha = useAlpha
+		self.useBeta = useBeta
 		self.feature_map_shrink = feature_map_shrink
 		self.feature_map_growth = feature_map_growth
 		self.spatial_map_shrink = spatial_map_shrink
@@ -82,6 +86,8 @@ class growGAN(object):
 		self.output_dims = self.output_dims.split('.')
 		self.output_dims = list(map(int, self.output_dims))
 		self.stage = self.stage.split('.')
+		self.useAlpha = self.useAlpha.split('.')
+		self.useBeta = self.useBeta.split('.')
 
 		nbrCycles = len(self.z_dims)
 
@@ -101,8 +107,10 @@ class growGAN(object):
 					"feature_map_growth" : self.feature_map_growth,
 					"spatial_map_shrink" : self.spatial_map_shrink,
 					"spatial_map_growth" : self.spatial_map_growth,
+					"output_dims" : self.output_dims[i-1],
 					"stage" : self.stage[i-1],
-					"output_dims" : self.output_dims[i-1]
+					"useAlpha" : self.useAlpha[i-1],
+					"useBeta" : self.useBeta[i-1]
 				}
 			else:
 				oldSpecs = {}
@@ -114,6 +122,8 @@ class growGAN(object):
 					epochs = self.epochs[i],
 					g_layers = self.g_layers[i],
 					d_layers = self.d_layers[i],
+					useAlpha = self.useAlpha[i],
+					useBeta = self.useBeta[i],
 					feature_map_shrink = self.feature_map_shrink,
 					feature_map_growth = self.feature_map_growth,
 					spatial_map_shrink = self.spatial_map_shrink,
