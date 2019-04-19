@@ -86,27 +86,27 @@ def conv4x4(input_, output_dim, batch_size, name, useBeta = 'n', beta = 1):
         fan_in = output_dim//(4*4)
         stddev = np.sqrt(2/fan_in).astype(np.float32)
         kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
-                            initializer=tf.constant_initializer(0.01)) #tf.initializers.random_normal(0,stddev=stddev))
+                            initializer=tf.initializers.random_normal(0,stddev=stddev))
         biases = tf.get_variable(
         'biases', [output_dim//(4*4)], initializer=tf.constant_initializer(0.0))
-        # if useBeta == 'y':
-        #     partially_new = kernel[0:input_.get_shape()[-1]//2,:]
-        #     partially_new = tf.reshape(partially_new, [input_.get_shape()[-1]//2, 4, 4, output_dim//(4*4)])
-        #     partially_new_old = partially_new[:,:,:, 0:output_dim//(4*4*2)]
-        #     partially_new_new = partially_new[:,:,:, output_dim//(4*4*2):]
-        #     partially_new_new = beta*partially_new_new
-        #     partially_new = tf.concat((partially_new_old,partially_new_new), axis = 3)
-        #     partially_new = tf.reshape(partially_new, [input_.get_shape()[-1]//2, output_dim])
+        if useBeta == 'y':
+            partially_new = kernel[0:input_.get_shape()[-1]//2,:]
+            partially_new = tf.reshape(partially_new, [input_.get_shape()[-1]//2, 4, 4, output_dim//(4*4)])
+            partially_new_old = partially_new[:,:,:, 0:output_dim//(4*4*2)]
+            partially_new_new = partially_new[:,:,:, output_dim//(4*4*2):]
+            partially_new_new = tf.scalar_mul(beta,partially_new_new)
+            partially_new = tf.concat((partially_new_old,partially_new_new), axis = 3)
+            partially_new = tf.reshape(partially_new, [input_.get_shape()[-1]//2, output_dim])
 
-        #     all_new = kernel[input_.get_shape()[-1]//2:,:]
-        #     all_new = beta*all_new
+            all_new = kernel[input_.get_shape()[-1]//2:,:]
+            all_new = tf.scalar_mul(beta,all_new)
 
-        #     kernel = tf.concat((partially_new, all_new), axis = 0, name = 'kernel')
+            kernel = tf.concat((partially_new, all_new), axis = 0)
 
-        #     biases_old = biases[0:output_dim//2]
-        #     biases_new = biases[output_dim//2:]
-        #     biases_new = beta*biases_new
-        #     biases = tf.concat((biases_old,biases_new), axis = 0, name = 'biases')
+            biases_old = biases[0:output_dim//2]
+            biases_new = biases[output_dim//2:]
+            biases_new = beta*biases_new
+            biases = tf.concat((biases_old,biases_new), axis = 0)
 
 
         dense = tf.matmul(input_, kernel)
@@ -169,31 +169,31 @@ def conv2d(input_, output_dim,
            name="conv2d", padding = 'SAME', useBeta = 'n', beta = 1, last = False, first =  False):
     with tf.variable_scope(name):
         w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
-                            initializer=tf.constant_initializer(0.01)) #tf.initializers.random_normal(0,stddev=stddev)) #ÄNDRA TILLBAKA SEN!
+                            initializer=tf.initializers.random_normal(0,stddev=stddev)) #ÄNDRA TILLBAKA SEN!
         biases = tf.get_variable(
                 'biases', [output_dim], initializer=tf.constant_initializer(0.0))
-        # if useBeta == 'y':
-        #     # if inputchannels = x, outputchannels = x/2, then the OJ was in: x/2 out x/4. This means that x/4 filters of depth x are completely new. This means that x/4 filters are the rest 
-        #     # and each filter has x/2 filter channels that come from the previously restored network. The last x/2 channels need to be multiplied by beta before the filter is used.
-        #     # the filter shape is [3,3,in,out] = [3,3,x,x/2]. We can split this into the two tensors of x/4 filters each.
+        if useBeta == 'y':
+            # if inputchannels = x, outputchannels = x/2, then the OJ was in: x/2 out x/4. This means that x/4 filters of depth x are completely new. This means that x/4 filters are the rest 
+            # and each filter has x/2 filter channels that come from the previously restored network. The last x/2 channels need to be multiplied by beta before the filter is used.
+            # the filter shape is [3,3,in,out] = [3,3,x,x/2]. We can split this into the two tensors of x/4 filters each.
 
-        #     partially_new = w[:,:,:,0:output_dim//2]
-        #     if first == False: # not used for the first grown layer in the discriminator
-        #         partially_new_old = partially_new[:,:,0:input_.get_shape()[-1]//2,:]
-        #         partially_new_new = partially_new[:,:,input_.get_shape()[-1]//2:,:]
-        #         partially_new_new = beta*partially_new_new
-        #         partially_new = tf.concat((partially_new_old,partially_new_new), axis = 2)
+            partially_new = w[:,:,:,0:output_dim//2]
+            if first == False: # not used for the first grown layer in the discriminator
+                partially_new_old = partially_new[:,:,0:input_.get_shape()[-1]//2,:]
+                partially_new_new = partially_new[:,:,input_.get_shape()[-1]//2:,:]
+                partially_new_new = beta*partially_new_new
+                partially_new = tf.concat((partially_new_old,partially_new_new), axis = 2)
 
-        #     all_new = w[:,:,:,output_dim//2:] # we have established that sometimes this isn't zero, even though we want it to be always zero. This can happen if we in the model (now only generator) calls useBeta when 
-        #     # we shouldn't.
-        #     if last == False: # not used for the last grown layer in the generator
-        #         all_new = tf.scalar_mul(beta,all_new)
-        #         biases_old = biases[0:output_dim//2]
-        #         biases_new = biases[output_dim//2:]
-        #         biases_new = beta*biases_new
-        #         biases = tf.concat((biases_old,biases_new), axis = 0, name = 'biases')
+            all_new = w[:,:,:,output_dim//2:] 
 
-        #     w = tf.concat((partially_new, all_new), axis = 3, name = 'w')
+            if last == False: # not used for the last grown layer in the generator
+                all_new = tf.scalar_mul(beta,all_new)
+                biases_old = biases[0:output_dim//2]
+                biases_new = biases[output_dim//2:]
+                biases_new = beta*biases_new
+                biases = tf.concat((biases_old,biases_new), axis = 0)
+
+            w = tf.concat((partially_new, all_new), axis = 3)
 
 
 

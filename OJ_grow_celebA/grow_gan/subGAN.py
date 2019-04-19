@@ -385,16 +385,16 @@ class subGAN(object):
 					# self.save(counter)
 
 				# Update D network
-				# _, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
-				# 	self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+				_, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
+					self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
 
-				# self.writer.add_summary(summary_str, counter)
+				self.writer.add_summary(summary_str, counter)
 
-				# # Update G network
-				# _, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
-				# 	self.z: batch_z, self.alpha: alpha, self.beta: beta})
+				# Update G network
+				_, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
+					self.z: batch_z, self.alpha: alpha, self.beta: beta})
 
-				# self.writer.add_summary(summary_str, counter)
+				self.writer.add_summary(summary_str, counter)
 
 				counter += 1
 				if alpha < 1:
@@ -593,14 +593,14 @@ class subGAN(object):
 						w = int(np.sqrt(imSize))
 						h = w
 						tensorValue = np.reshape(tensorValue, [maps, w, h, channels])
-						temp = np.concatenate((tensorValue, np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
-						temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))),axis = 0)
+						temp = np.concatenate((tensorValue, np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+						temp = np.concatenate((temp,np.random.normal(0,0.01,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))),axis = 0)
 						temp = np.reshape(temp, [maps*2,filterSize*2])
 						temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					else: 
-						temp = np.concatenate((tensorValue, np.zeros((tensorValue.shape[0],tensorValue.shape[1]))), axis = 0)
+						temp = np.concatenate((tensorValue, np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1]))), axis = 0)
 						temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
@@ -610,14 +610,14 @@ class subGAN(object):
 						assign_op = tf.assign(tensor, tensorValue)
 					# double fourth axis
 					elif tensorValue.shape[2] == tensor.shape[2]:
-						temp = np.concatenate((tensorValue,np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+						temp = np.concatenate((tensorValue,np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
 						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
 						temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					# double third axis
 					elif tensorValue.shape[3] == tensor.shape[3]:
-						temp = np.concatenate((tensorValue,np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
+						temp = np.concatenate((tensorValue,np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
 						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])), tensorValue), axis = 2)
 						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
 						temp = temp.astype(np.float32)
@@ -625,8 +625,8 @@ class subGAN(object):
 						# self.sess.run(assign_op)
 					# double both third and fourth axis
 					else:
-						temp = np.concatenate((tensorValue,np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
-						temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+						temp = np.concatenate((tensorValue,np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+						temp = np.concatenate((temp,np.random.normal(0,0.01,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
 						# temp = np.concatenate((np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3])), temp), axis = 2)
 						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
 						# temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)

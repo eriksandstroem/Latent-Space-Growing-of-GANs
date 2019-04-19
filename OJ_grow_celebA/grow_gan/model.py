@@ -23,6 +23,9 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
             times_to_shrink = int(np.log2(int(z.get_shape()[-1]//8)))
             featureshrinkList = featureshrinkList[:times_to_shrink]
 
+        useBetaIdx = int(np.maximum(np.log2(int(z.get_shape()[-1])//8)-1,0.0))
+        print('useBetaIdx: ', useBetaIdx)
+
 
         if feature_map_shrink == 'f':
             nbr_layers_shrink = int(z.get_shape()[-1])//8
@@ -35,6 +38,7 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                 # fully-connected layers (equivalent to 4x4 conv)
                 print('batch or sample size: ', batch_size)
                 h = conv4x4(z, int(z.get_shape()[-1])*4*4, batch_size, name = 'g_h'+str(i+1), useBeta = useBeta, beta = beta)
+                # h = tf.constant(1.0, shape = [1, 4, 4, int(z.get_shape()[-1])])
                 print('g_h1:', h.get_shape())
             else:
                 if spatial_map_growth == 'n' and i % 2 == 0 and int(h.get_shape()[1]) < output_dim:
@@ -45,33 +49,53 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                     h = upscale2d(h, factor=2)
                 if feature_map_shrink == 'n':
                     if i in featureshrinkList and int(h.get_shape()[-1]) > 8:
-                        if i <= layers - 2:
-                            if i == layers - 2:
+                        if i <= layers - 2 - 2*useBetaIdx:
+                            if i == layers - 2 - 2*useBetaIdx:          
                                 h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, last = True)
-                            else:
+                            else:            
                                 h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta)
-                        else:
+                                # if i ==2:
+                                #     print('returning this coming layer FOR zdim 32!')
+                                #     stoffe = h
+                        else:       
                             h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                         np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME')
+                            # print('layer5 below right?')
+                            # stoffe = h
                         print('g_h'+str(i+1)+':', h.get_shape())
                     else:
-                        if i <= layers - 2:
-                            if i == layers - 2:
+                        if i <= layers - 2 - 2*useBetaIdx:
+                            if i == layers - 2 - 2*useBetaIdx:
                                 h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, last = True)
                             else:
+                            #     if i == 3: # 2 innan
+                            #         # h = tf.constant(1.0,shape=[1,int(h.get_shape()[1]),int(h.get_shape()[1]),int(h.get_shape()[-1])])
+                            #         h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
+                            # np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta)
+                            #         print('returning this coming layer FOR zdim 16!')
+                            #         stoffe = h
+                            #     else:
+                            #         print('not tensor 1 before here')
                                 h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
-                            np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta)
+                                np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta)
                         else:
+                            # if i == 3:
+                            #     # h = tf.constant(1.0,shape=[1,int(h.get_shape()[1]),int(h.get_shape()[1]),int(h.get_shape()[-1])])
+                            #     h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
+                            # np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME')
+                            #     print('returning this coming layer FOR zdim 32!')
+                            #     stoffe = h
+                            # else:
                             h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                         np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME')
                         print('g_h'+str(i+1)+':', h.get_shape())
                 elif feature_map_shrink == 'f':
                     if i >= idx_shrink:
-                        if i <= layers - 2:
-                            if i == layers - 2:
+                        if i <= layers - 2 - 2*useBetaIdx:
+                            if i == layers - 2 - 2*useBetaIdx:
                                 h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, last = True)
                             else:
@@ -82,8 +106,8 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                         np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME')
                         print('g_h'+str(i+1)+':', h.get_shape())
                     else:
-                        if i <= layers - 2:
-                            if i == layers - 2:
+                        if i <= layers - 2 - 2*useBetaIdx:
+                            if i == layers - 2 - 2*useBetaIdx:
                                 h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, last = True)
                             else:
@@ -99,7 +123,7 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
             #     g_bn = batch_norm(name='g_bn'+str(i+1))
             #     h = g_bn(h)
             if activation == 'lrelu':
-                h = lrelu(h)
+                h = lrelu(h)              
             elif activation == 'relu':
                 h = relu(h)
 
@@ -132,6 +156,10 @@ def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 
             downsampleList.append(idx)
             idx = idx - 2
 
+        useBetaIdx = int(np.maximum(np.log2(z_dim//8)-1,0.0))
+        print('useBetaIdx: ', useBetaIdx)
+
+
         print('Indices when to downsample: ', downsampleList)
 
         for i in range(layers):
@@ -161,8 +189,8 @@ def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 
                     h = downscale2d(h, factor=2)
                 if feature_map_growth == 'n':
                     if i in downsampleList and useAlpha == 'n' and int(h.get_shape()[-1]) < z_dim: # i % 2 == 0
-                        if i >= 3:
-                            if i == 3:
+                        if i >= 3 + 2*useBetaIdx:
+                            if i == 3 + 2*useBetaIdx:
                                 h = conv2d(h, int(h.get_shape()[-1])*2, 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, first = True)
                             else:
@@ -182,8 +210,8 @@ def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 
        
                         print('d_h'+str(i+1)+':', h.get_shape())
                     else:
-                        if i >= 3:
-                            if i == 3:
+                        if i >= 3 + 2*useBetaIdx:
+                            if i == 3 + 2*useBetaIdx:
                                 h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, first = True)
                             else:
@@ -195,8 +223,8 @@ def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 
                         print('d_h'+str(i+1)+':', h.get_shape())
                 elif feature_map_growth == 'f':
                     if int(h.get_shape()[-1]) < z_dim:
-                        if i >= 3:
-                            if i == 3:
+                        if i >= 3 + 2*useBetaIdx:
+                            if i == 3 + 2*useBetaIdx:
                                 h = conv2d(h, int(h.get_shape()[-1])*2, 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, first = True)
                             else:
@@ -207,8 +235,8 @@ def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 
                         np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME')
                         print('d_h'+str(i+1)+':', h.get_shape())
                     else:
-                        if i >= 3:
-                            if i == 3:
+                        if i >= 3 + 2*useBetaIdx:
+                            if i == 3 + 2*useBetaIdx:
                                 h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, first = True)
                             else:
