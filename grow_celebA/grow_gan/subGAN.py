@@ -385,16 +385,16 @@ class subGAN(object):
 					# self.save(counter)
 
 				# Update D network
-				# _, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
-				# 	self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+				_, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
+					self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
 
-				# self.writer.add_summary(summary_str, counter)
+				self.writer.add_summary(summary_str, counter)
 
-				# # Update G network
-				# _, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
-				# 	self.z: batch_z, self.alpha: alpha, self.beta: beta})
+				# Update G network
+				_, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
+					self.z: batch_z, self.alpha: alpha, self.beta: beta})
 
-				# self.writer.add_summary(summary_str, counter)
+				self.writer.add_summary(summary_str, counter)
 
 				counter += 1
 				if alpha < 1:

@@ -24,7 +24,6 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                 print('batch or sample size: ', batch_size)
                 h = conv4x4(z, int(z.get_shape()[-1])*4*4, batch_size, name = 'g_h'+str(i+1), useBeta = useBeta, beta = beta)
                 print('g_h1:', h.get_shape())
-                st = h
             else:
                 if spatial_map_growth == 'n' and i % 2 == 0 and int(h.get_shape()[1]) < output_dim:
                     h = upscale2d(h, factor=2)
@@ -36,17 +35,17 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                     if i % 2 == 0 and int(h.get_shape()[-1]) > 8:
                         if i <= layers - 2:
                             if i == layers - 2:
-                                print('a')
+                                # print('a')
                                 h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, last = True)
                                 # st = h
                             else:
-                                print('b')
+                                # print('b')
                                 h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta)
                                 # st = h
                         else:
-                            print('c')
+                            # print('c')
                             h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                         np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME')
                             # st = h
@@ -54,18 +53,18 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                     else:
                         if i <= layers - 2:
                             if i == layers - 2:
-                                print('d')
+                                # print('d')
                                 h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta, last = True)
                                 # st = h
                             else:
-                                print('e')
+                                # print('e')
                                 h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta)
                                 if i == 1:
                                     st = h
                         else:
-                            print('f')
+                            # print('f')
                             h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                         np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME')
                             # st = h
@@ -114,7 +113,7 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
         print('out generator shape: ', out.get_shape())
         
         # out = tf.nn.tanh(out)
-    return st
+    return out
 
 # feature_map_growth can be normal, fast. Normal is that we increase the feature maps by doubling every other layer.
 # fast is that we decrease them as early as possible, doing it for every layer up to 256.

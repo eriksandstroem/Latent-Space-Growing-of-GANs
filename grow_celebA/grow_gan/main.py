@@ -15,7 +15,7 @@ d_layers = '3.5.5.7.7.9.9.11.11.13.13'
 output_dims = '4.8.8.16.16.32.32.64.64.128.128' 
 useAlpha = 'n.y.n.y.n.y.n.y.n.y.n'
 useBeta = 'n.n.y.n.y.n.y.n.y.n.y'
-useBeta = 'n.n.n.n.n.n.n.n.n.n.n'
+# useBeta = 'n.n.n.n.n.n.n.n.n.n.n'
 
 # z_dims = '32.64.64.128.128.256'
 # epochs = '1.1.1.1.1.1'
