@@ -112,7 +112,7 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
 
         print('out generator shape: ', out.get_shape())
         
-        # out = tf.nn.tanh(out)
+        out = tf.nn.tanh(out)
     return out
 
 # feature_map_growth can be normal, fast. Normal is that we increase the feature maps by doubling every other layer.
