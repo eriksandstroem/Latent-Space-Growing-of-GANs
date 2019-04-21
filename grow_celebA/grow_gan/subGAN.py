@@ -385,16 +385,16 @@ class subGAN(object):
 					# self.save(counter)
 
 				# Update D network
-				_, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
-					self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+				# _, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
+				# 	self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
 
-				self.writer.add_summary(summary_str, counter)
+				# self.writer.add_summary(summary_str, counter)
 
-				# Update G network
-				_, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
-					self.z: batch_z, self.alpha: alpha, self.beta: beta})
+				# # Update G network
+				# _, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
+				# 	self.z: batch_z, self.alpha: alpha, self.beta: beta})
 
-				self.writer.add_summary(summary_str, counter)
+				# self.writer.add_summary(summary_str, counter)
 
 				counter += 1
 				if alpha < 1:
@@ -556,7 +556,7 @@ class subGAN(object):
 				elif reader.has_tensor(tensor_name) and 'generator' in tensor_name and nbr == self.g_layers:
 					restore_dict[tensor_name] = v
 					# print('JAtensor name: ', tensor_name)
-				elif reader.has_tensor(tensor_name) and 'discriminator/d_h1/' in tensor_name or 'discriminator/d_h2' in tensor_name or 'discriminator/d_h3' in tensor_name:
+				elif reader.has_tensor(tensor_name) and 'discriminator/d_h1/' in tensor_name or 'discriminator/d_h2' in tensor_name: # or 'discriminator/d_h3' in tensor_name:
 					restore_dict[tensor_name] = v
 					# print('JAtensor name: ', tensor_name)
 				else:
@@ -573,10 +573,12 @@ class subGAN(object):
 				print('newtensorshape: ', tensor.shape)
 				tensor_name_split = tensor_name.split('/')
 				if tensor_name_split[-1] == 'bias':
+					tensorValue = tensorValue.astype(np.float32)
 					assign_op = tf.assign(tensor, tensorValue) # why don't we have this in the dictionary directly?
 					# self.sess.run(assign_op)
 				elif tensor_name_split[-1] == 'biases':	
 					if tensorValue.shape == tensor.shape:
+						tensorValue = tensorValue.astype(np.float32)
 						assign_op = tf.assign(tensor, tensorValue)  # why don't we have this in the dictionary directly?
 						# self.sess.run(assign_op)
 					else:
@@ -591,37 +593,44 @@ class subGAN(object):
 						w = int(np.sqrt(imSize))
 						h = w
 						tensorValue = np.reshape(tensorValue, [maps, w, h, channels])
-						temp = np.concatenate((tensorValue, np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
-						temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))),axis = 0)
+						temp = np.concatenate((tensorValue, np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+						temp = np.concatenate((temp,np.random.normal(0,1,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))),axis = 0)
 						temp = np.reshape(temp, [maps*2,filterSize*2])
+						temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					else: 
-						temp = np.concatenate((tensorValue, np.zeros((tensorValue.shape[0],tensorValue.shape[1]))), axis = 0)
-						print(temp.shape)
+						temp = np.concatenate((tensorValue, np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1]))), axis = 0)
+						temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 				elif tensor_name_split[-1] == 'w':
+					if tensorValue.shape[2] == tensor.shape[2] and tensorValue.shape[3] == tensor.shape[3]:
+						tensorValue = tensorValue.astype(np.float32)
+						assign_op = tf.assign(tensor, tensorValue)
 					# double fourth axis
-					if tensorValue.shape[2] == tensor.shape[2]:
-						temp = np.concatenate((tensorValue,np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+					elif tensorValue.shape[2] == tensor.shape[2]:
+						temp = np.concatenate((tensorValue,np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
 						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+						temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					# double third axis
 					elif tensorValue.shape[3] == tensor.shape[3]:
-						temp = np.concatenate((tensorValue,np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
+						temp = np.concatenate((tensorValue,np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
 						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])), tensorValue), axis = 2)
 						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
+						temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					# double both third and fourth axis
 					else:
-						temp = np.concatenate((tensorValue,np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
-						temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+						temp = np.concatenate((tensorValue,np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+						temp = np.concatenate((temp,np.random.normal(0,1,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
 						# temp = np.concatenate((np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3])), temp), axis = 2)
 						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
 						# temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+						temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 				
 				self.sess.run(assign_op)
