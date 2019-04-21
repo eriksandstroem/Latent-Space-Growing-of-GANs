@@ -61,8 +61,8 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                                 # print('e')
                                 h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                             np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta)
-                                if i == 1:
-                                    st = h
+                                # if i == 1:
+                                #     st = h
                         else:
                             # print('f')
                             h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
