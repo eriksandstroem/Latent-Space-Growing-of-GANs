@@ -556,7 +556,7 @@ class subGAN(object):
 				elif reader.has_tensor(tensor_name) and 'generator' in tensor_name and nbr == self.g_layers:
 					restore_dict[tensor_name] = v
 					# print('JAtensor name: ', tensor_name)
-				elif reader.has_tensor(tensor_name) and 'discriminator/d_h1/' in tensor_name or 'discriminator/d_h2' in tensor_name or 'discriminator/d_h3' in tensor_name:
+				elif reader.has_tensor(tensor_name) and 'discriminator/d_h1/' in tensor_name or 'discriminator/d_h2' in tensor_name:
 					restore_dict[tensor_name] = v
 					# print('JAtensor name: ', tensor_name)
 				else:

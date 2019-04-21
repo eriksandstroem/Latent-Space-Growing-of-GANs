@@ -86,9 +86,9 @@ def conv4x4(input_, output_dim, batch_size, name, useBeta = 'n', beta = 1):
         fan_in = output_dim//(4*4)
         stddev = np.sqrt(2/fan_in).astype(np.float32)
         kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
-                            initializer=tf.initializers.random_normal(0,stddev=stddev))
+                            initializer=tf.initializers.random_normal(0,stddev=stddev), dtype = tf.float32)
         biases = tf.get_variable(
-        'biases', [output_dim//(4*4)], initializer=tf.constant_initializer(0.0))
+        'biases', [output_dim//(4*4)], initializer=tf.constant_initializer(0.0), dtype = tf.float32)
         if useBeta == 'y':
             partially_new = kernel[0:input_.get_shape()[-1]//2,:]
             partially_new = tf.reshape(partially_new, [input_.get_shape()[-1]//2, 4, 4, output_dim//(4*4)])
@@ -169,9 +169,9 @@ def conv2d(input_, output_dim,
            name="conv2d", padding = 'SAME', useBeta = 'n', beta = 1, last = False, first =  False):
     with tf.variable_scope(name):
         w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
-                            initializer=tf.initializers.random_normal(0,stddev=stddev)) #ÄNDRA TILLBAKA SEN!
+                            initializer=tf.initializers.random_normal(0,stddev=stddev), dtype = tf.float32) #ÄNDRA TILLBAKA SEN!
         biases = tf.get_variable(
-                'biases', [output_dim], initializer=tf.constant_initializer(0.0))
+                'biases', [output_dim], initializer=tf.constant_initializer(0.0), dtype = tf.float32)
         if useBeta == 'y':
             # if inputchannels = x, outputchannels = x/2, then the OJ was in: x/2 out x/4. This means that x/4 filters of depth x are completely new. This means that x/4 filters are the rest 
             # and each filter has x/2 filter channels that come from the previously restored network. The last x/2 channels need to be multiplied by beta before the filter is used.
