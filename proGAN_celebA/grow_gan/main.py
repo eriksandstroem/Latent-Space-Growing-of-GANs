@@ -9,32 +9,58 @@ from utils import pp, visualize, show_all_variables
 import tensorflow as tf
 
 z_dims = '256.256.256.256.256.256'
-epochs = '1.2.2.2.2.2'
+epochs = '4.8.8.8.8.8'
 g_layers = '2.4.6.8.10.12'
 d_layers = '3.5.7.9.11.13'
 output_dims = '4.8.16.32.64.128' 
 useAlpha = 'n.y.y.y.y.y'
 useBeta = 'n.n.n.n.n.n'
+stage = 'i.i.i.i.i.i'
+
+# ----------------------------------
+# Exact pro settings
+# z_dims = '512.512.512.512.512.512'
+# epochs = '4.8.8.8.8.8'
+# g_layers = '2.4.6.8.10.12'
+# d_layers = '3.5.7.9.11.13'
+# output_dims = '4.8.16.32.64.128' 
+# useAlpha = 'n.y.y.y.y.y'
+# useBeta = 'n.n.n.n.n.n'
+# stage = 'i.i.i.i.i.i'
+# feature_map_shrink = 'pro' # ['n', 'f'] generator
+# feature_map_growth = 'pro' # ['n', 'f'] discriminator
+# spatial_map_shrink = 'n' # ['n', 'f'] discriminator
+# spatial_map_growth = 'n' # ['n', 'f'] generator
+# -----------------------------------
+
+# z_dims = '256'
+# epochs = '44'
+# g_layers = '12'
+# d_layers = '13'
+# output_dims = '128' 
+# useAlpha = 'n'
+# useBeta = 'n'
+# stage = 'i'
 
 feature_map_shrink = 'n' # ['n', 'f'] generator
 feature_map_growth = 'n' # ['n', 'f'] discriminator
 spatial_map_shrink = 'n' # ['n', 'f'] discriminator
 spatial_map_growth = 'n' # ['n', 'f'] generator
-stage = 'i.i.i.i.i.i'
-loss = 'ns' # ['RaLS', 'ns', 'wa']
-z_distr = 'u' # ['u', 'g']
+
+loss = 'wa' # ['RaLS', 'ns', 'wa']
+z_distr = 'g' # ['u', 'g']
 activation = 'lrelu'
 weight_init = 'z' # ['z', 'u', 'g', 'x', 'he']
-lr = 0.0002
+lr = 0.001
 beta1 = 0.0
 beta2 = 0.99
 epsilon = 0.00000001
-batch_size = 64
+batch_size = 16  # REMEMBER TO CHECK THIS WHEN RUNNING!!!
 sample_num = 64
-gpu = 1
+gpu = 0
 g_batchnorm = True
 d_batchnorm = True
-normalize_z = False
+normalize_z = True
 crop = True
 trainflag = True
 visualize = False
@@ -46,7 +72,6 @@ G_run_avg = True
 # THEN ONLY ADAPTIVE BATCH SIZE LEFT
 
 
-model_dir = z_dims +'_'+ epochs +'_'+ g_layers +'_'+ d_layers +'_'+ output_dims +'_'+feature_map_shrink+feature_map_growth+spatial_map_shrink+spatial_map_growth+'_'+ loss +'_'+z_distr +'_'+ activation +'_'+ weight_init +'_'+ str(batch_size) +'_'+str(g_batchnorm) +'_'+ str(d_batchnorm) +'_'+ str(normalize_z)
 
 flags = tf.app.flags
 flags.DEFINE_string("z_dims", z_dims,
@@ -111,14 +136,15 @@ flags.DEFINE_boolean("D_loss_extra", D_loss_extra,
                      "True using D_loss_extra")
 flags.DEFINE_boolean("G_run_avg", G_run_avg,
                      "True using G_run_avg")
-flags.DEFINE_string("model_dir", model_dir,
-                     "Directory name to save the images/models/logs")
+# flags.DEFINE_string("model_dir", model_dir,
+#                      "Directory name to save the images/models/logs")
 
 FLAGS = flags.FLAGS
 
-
 def main(_):
     pp.pprint(flags.FLAGS.__flags)
+    model_dir = FLAGS.z_dims +'_'+ FLAGS.epochs +'_'+ FLAGS.g_layers +'_'+ FLAGS.d_layers +'_'+ FLAGS.output_dims +'_'+FLAGS.feature_map_shrink+FLAGS.feature_map_growth+FLAGS.spatial_map_shrink+FLAGS.spatial_map_growth+'_'+ FLAGS.loss +'_'+FLAGS.z_distr +'_'+ FLAGS.activation +'_'+ FLAGS.weight_init +'_'+ str(FLAGS.batch_size) +'_'+str(FLAGS.g_batchnorm) +'_'+ str(FLAGS.d_batchnorm) +'_'+ str(FLAGS.normalize_z)+'_'+ str(FLAGS.minibatch_std) +'_'+str(FLAGS.use_wscale) +'_'+ str(FLAGS.use_pixnorm) +'_'+ str(FLAGS.D_loss_extra)
+
 
     gan = growGAN(
         z_dims = FLAGS.z_dims,
@@ -150,7 +176,7 @@ def main(_):
         crop = FLAGS.crop,
         trainflag = FLAGS.trainflag,
         visualize = FLAGS.visualize,
-        model_dir = FLAGS.model_dir,
+        model_dir = model_dir,
         minibatch_std = FLAGS.minibatch_std,
         use_wscale = FLAGS.use_wscale,
         use_pixnorm = FLAGS.use_pixnorm,

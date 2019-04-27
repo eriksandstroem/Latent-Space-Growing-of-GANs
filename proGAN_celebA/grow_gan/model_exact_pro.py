@@ -17,6 +17,7 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
             nbr_layers_shrink = int(z.get_shape()[-1])//8
             idx_shrink = layers - np.log2(nbr_layers_shrink)
             print('idx_shrink: ', idx_shrink)
+
         print('input shape z:', z.get_shape())
         for i in range(layers):
             if i == 0:
@@ -48,6 +49,13 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                         print('g_h'+str(i+1)+':', h.get_shape())
                 elif feature_map_shrink == 'f':
                     if i >= idx_shrink:
+                        h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', use_wscale = use_wscale)
+                        print('g_h'+str(i+1)+':', h.get_shape())
+                    else:
+                        h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', use_wscale = use_wscale)
+                        print('g_h'+str(i+1)+':', h.get_shape())
+                elif feature_map_shrink == 'pro':
+                    if i >= 8 and i % 2 == 0 and int(h.get_shape()[-1]) > 8:
                         h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', use_wscale = use_wscale)
                         print('g_h'+str(i+1)+':', h.get_shape())
                     else:
@@ -100,12 +108,27 @@ def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 
 
         print('Indices when to downsample: ', downsampleList)
 
-        featureDim = 256/np.power(2,(layers-3)//2)
+        if feature_map_growth == 'n' or feature_map_growth == 'f':
+            featureDim = 256/np.power(2,(layers-3)//2)
+            res_connect_featureDim = 2*featureDim
+
+        elif feature_map_growth == 'pro':
+            if layers == 11:
+                featureDim = 256
+            elif layers == 13:
+                featureDim = 128
+            else:
+                featureDim = 512
+
+            if featureDim == 512:
+                res_connect_featureDim = 512
+            else:
+                res_connect_featureDim = 2*featureDim
 
         if useAlpha == 'y':
             res_connect = image
             res_connect = downscale2d(res_connect, factor=2)
-            res_connect = conv2d(res_connect, featureDim*2, 1, 1, 1, 1, name = 'd_h1_'+str(layers-2), use_wscale = use_wscale)
+            res_connect = conv2d(res_connect, res_connect_featureDim, 1, 1, 1, 1, name = 'd_h1_'+str(layers-2), use_wscale = use_wscale)
             if activation == 'lrelu':
                 res_connect = lrelu(res_connect)
             elif activation == 'relu':
@@ -136,7 +159,7 @@ def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 
                         print('fused')
                 elif spatial_map_shrink == 'f' and int(h.get_shape()[1]) > 4:
                     h = downscale2d(h, factor=2)
-                if feature_map_growth == 'n':
+                if feature_map_growth == 'n' or feature_map_growth == 'pro':
                     if i in featureUpsampleList and int(h.get_shape()[-1]) < z_dim: # i % 2 == 0
                         h = conv2d(h, int(h.get_shape()[-1])*2, 3, 3, 1, 1, name='d_h'+str(i+1), padding = 'SAME', use_wscale = use_wscale)
                         print('d_h'+str(i+1)+':', h.get_shape())

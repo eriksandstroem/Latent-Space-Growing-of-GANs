@@ -82,7 +82,7 @@ class subGAN(object):
 		self.crop = crop
 		self.visualize = visualize
 		self.model_dir = model_dir
-		self.model_dir_full = model_dir +  '/stage_'+self.stage+'_z'+str(self.z_dim)
+		self.model_dir_full = model_dir +  '/output_dim_'+str(self.output_size)
 		self.minibatch_std = minibatch_std
 		self.use_wscale = use_wscale
 		self.use_pixnorm = use_pixnorm
@@ -152,7 +152,8 @@ class subGAN(object):
 			xhat = tf.add( tf.multiply(gamma,self.inputs), tf.multiply((1-gamma),self.G))
 
 			_, D_xhat = D(xhat, batch_size = self.batch_size, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
+			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha,
+			 beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim, minibatch_std = self.minibatch_std, use_wscale = self.use_wscale)
 
 			gradients = tf.gradients(D_xhat, xhat)[0] # is different between arch 1 and 2. Strange. The inputs are of different size, but just an upsampled version of the lower resolution version. Maybe that's why.
 			# Since we take the gradient wrt xhat which is 4 times larger, when we sum the squares of gradients for each pixel we should get a larger gradient penalty for the larger image.
@@ -215,7 +216,8 @@ class subGAN(object):
 			xhat = tf.add( tf.multiply(gamma,self.inputs_sample), tf.multiply((1-gamma),self.sampler))
 
 			_, D_xhat = D(xhat, batch_size = self.sample_num, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-				feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
+				feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha,
+				 beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim, minibatch_std = self.minibatch_std, use_wscale = self.use_wscale)
 
 
 			gradients = tf.gradients(D_xhat, xhat)[0]
@@ -286,7 +288,7 @@ class subGAN(object):
 			if self.normalize_z:
 				sample_z /= np.sqrt(np.sum(np.square(sample_z)))
 		elif self.z_distr == 'g':
-			sample_z = np.random.normal(0,1,shape=(self.sample_num, self.z_dim)).astype(np.float32)
+			sample_z = np.random.normal(0,1,size=(self.sample_num, self.z_dim)).astype(np.float32)
 			if self.normalize_z:
 				sample_z /= np.sqrt(np.sum(np.square(sample_z)))
 				
@@ -363,7 +365,7 @@ class subGAN(object):
 					if self.normalize_z:
 						batch_z /= np.sqrt(np.sum(np.square(batch_z)))
 				elif self.z_distr == 'g':
-					batch_z = np.random.normal(0,1,shape=(self.batch_size, self.z_dim)).astype(np.float32)
+					batch_z = np.random.normal(0,1,size=(self.batch_size, self.z_dim)).astype(np.float32)
 					if self.normalize_z:
 						batch_z /= np.sqrt(np.sum(np.square(batch_z)))
 				# batch_z = np.full((self.batch_size, self.z_dim), 0.1).astype(np.float32)
@@ -377,17 +379,19 @@ class subGAN(object):
 
 				# self.writer.add_summary(summary_str, counter)
 
-				errD_fake = self.d_loss_fake.eval(
-					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
-				errD_real = self.d_loss_real.eval(
-					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
-				errG = self.g_loss.eval(
-					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+
 				# d_real_logits = self.D_real_logits.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
 				# d_fake_logits = self.D_fake_logits.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
 				# g_out = self.G.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
-                
-				print(
+
+				if np.mod(counter, 500) == 0:
+					errD_fake = self.d_loss_fake.eval(
+					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					errD_real = self.d_loss_real.eval(
+					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					errG = self.g_loss.eval(
+					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					print(
 					"Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f, beta: %0.8f" %
 						(epoch, idx, batch_idxs, time.time() - start_time, errD_fake+errD_real, errG, beta))
 				# print('g_out: ', g_out)# errD_fake + errD_real
@@ -435,18 +439,18 @@ class subGAN(object):
 
 				# Update G network
 				_, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
-					self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
 
 				self.writer.add_summary(summary_str, counter)
 
 	
-				if beta < 1.0:
-					beta = beta + 1.0/batch_idxs
+				if alpha < 1.0:
+					alpha = alpha + 0.25/batch_idxs # REMEMBER TO CHECK THIS LINE FOR HOW LONG THE FEEDING IS!!!
 				else:
-					beta = 1.0
+					alpha = 1.0
 
 
-				if np.mod(counter, 500) == 0: # CHANGE 5 to 1000 later
+				if np.mod(counter, 500) == 0:
 					self.save(counter)
 				counter += 1
 
@@ -465,7 +469,7 @@ class subGAN(object):
 	                
 				# 	print(
 				# 		"Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" %
-				# 			(epoch, idx, batch_idxs, time.time() - start_time, errD_real, errG)) # errD_fake + errD_real
+				# 			(epoch, idx, batch_idxs, time.time() - start_time, errD_real+errD_fake, errG)) # errD_fake + errD_real
 				# 	print('d_fake_logits: ', d_fake_logits)
 				# 	print('d_real_logits: ', d_real_logits)
 				# 	print('errD_fake: ', errD_fake)
@@ -526,7 +530,7 @@ class subGAN(object):
 				# print('tensor name: ', tensor_name)
 			return False, 0, 'First Training Cycle'
 	
-		old_model_location = '../models/'+self.model_dir+'/stage_'+self.oldSpecs["stage"]+'_z'+str(self.oldSpecs['z_dim'])
+		old_model_location = '../models/'+self.model_dir+'/output_dim_'+str(self.oldSpecs["output_dims"])
 		ckpt = tf.train.get_checkpoint_state(old_model_location)
 
 		ckpt_name = os.path.basename(ckpt.model_checkpoint_path)

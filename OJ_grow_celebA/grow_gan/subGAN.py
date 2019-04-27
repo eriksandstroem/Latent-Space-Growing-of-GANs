@@ -22,6 +22,8 @@ class subGAN(object):
 		d_layers,
 		useAlpha,
 		useBeta,
+		useGamma,
+		useTau,
 		feature_map_shrink,
 		feature_map_growth,
 		spatial_map_shrink,
@@ -45,6 +47,11 @@ class subGAN(object):
 		crop,
 		visualize,  # NOT TAKEN CARE OF
 		model_dir,
+		minibatch_std,
+		use_wscale, 
+		use_pixnorm,
+		D_loss_extra,
+		G_run_avg, # NOT TAKEN CARE OF
 		oldSpecs):
 
 		self.sess = sess
@@ -54,6 +61,8 @@ class subGAN(object):
 		self.d_layers = d_layers
 		self.useAlpha = useAlpha
 		self.useBeta = useBeta
+		self.useGamma = useGamma
+		self.useTau = useTau
 		self.feature_map_shrink = feature_map_shrink
 		self.feature_map_growth = feature_map_growth
 		self.spatial_map_shrink = spatial_map_shrink
@@ -78,6 +87,11 @@ class subGAN(object):
 		self.visualize = visualize
 		self.model_dir = model_dir
 		self.model_dir_full = model_dir +  '/stage_'+self.stage+'_z'+str(self.z_dim)
+		self.minibatch_std = minibatch_std
+		self.use_wscale = use_wscale
+		self.use_pixnorm = use_pixnorm
+		self.D_loss_extra = D_loss_extra
+		self.G_run_avg = G_run_avg
 		self.oldSpecs = oldSpecs
 
 		self.data = glob(os.path.join("../../celebA_dataset", 'celebA', '*.jpg'))
@@ -102,13 +116,20 @@ class subGAN(object):
 		self.z = tf.placeholder(tf.float32, [None, self.z_dim], name='z')
 		self.alpha = tf.placeholder(tf.float32, shape=(), name = 'alpha')
 		self.beta = tf.placeholder(tf.float32, shape=(), name = 'beta')
+		self.gamma = tf.placeholder(tf.float32, shape=(), name = 'gamma')
+		self.tau = tf.placeholder(tf.float32, shape=(), name = 'tau')
 
 		self.G = G(self.z, batch_size= self.batch_size, reuse = False, bn = self.g_batchnorm, layers = self.g_layers, activation = self.activation, output_dim = self.output_size,
-			feature_map_shrink = self.feature_map_shrink, spatial_map_growth = self.spatial_map_growth, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta)
-		self.D_real, self.D_real_logits = D(inputs, batch_size = self.batch_size, reuse = False, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
-		self.D_fake, self.D_fake_logits = D(self.G, batch_size = self.batch_size, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
+			feature_map_shrink = self.feature_map_shrink, spatial_map_growth = self.spatial_map_growth, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta,
+			 use_wscale = self.use_wscale, use_pixnorm = self.use_pixnorm, useGamma = self.useGamma, gamma = self.gamma)
+		self.D_real, self.D_real_logits = D(inputs, batch_size = self.batch_size, reuse = False, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation,
+		 input_dim = self.input_size, feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha,
+		  useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim, minibatch_std = self.minibatch_std, use_wscale = self.use_wscale,
+		   useTau = self.useTau, tau = self.tau)
+		self.D_fake, self.D_fake_logits = D(self.G, batch_size = self.batch_size, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation,
+		 input_dim = self.input_size, feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha,
+		  useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim, minibatch_std = self.minibatch_std, use_wscale = self.use_wscale,
+		   useTau = self.useTau, tau = self.tau)
 
 
 		"""loss function"""
@@ -119,6 +140,8 @@ class subGAN(object):
 			self.d_loss_fake = tf.reduce_mean(
 			    tf.square(self.D_fake_logits - tf.reduce_mean(self.D_real_logits) + 1))
 			self.d_loss = (self.d_loss_real + self.d_loss_fake) / 2
+			if self.D_loss_extra:
+				self.d_loss = self.d_loss + 0.001*tf.reduce_mean(tf.square(self.D_real_logits))
 
 			# g_loss
 			self.g_loss = (tf.reduce_mean(tf.square(self.D_fake_logits - tf.reduce_mean(self.D_real_logits))) / 2 
@@ -127,6 +150,8 @@ class subGAN(object):
 			self.d_loss_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_real_logits,labels=tf.ones_like(self.D_real_logits)))
 			self.d_loss_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits,labels=tf.zeros_like(self.D_fake_logits)))
 			self.d_loss = self.d_loss_real + self.d_loss_fake
+			if self.D_loss_extra:
+				self.d_loss = self.d_loss + 0.001*tf.reduce_mean(tf.square(self.D_real_logits))
 			self.g_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits,labels=tf.ones_like(self.D_fake_logits)))
 		elif self.loss == 'wa':
 			hyperparameter = 10
@@ -135,7 +160,9 @@ class subGAN(object):
 			xhat = tf.add( tf.multiply(gamma,self.inputs), tf.multiply((1-gamma),self.G))
 
 			_, D_xhat = D(xhat, batch_size = self.batch_size, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
+			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha,
+			 beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim, minibatch_std = self.minibatch_std, use_wscale = self.use_wscale,
+			  useTau = self.useTau, tau = self.tau)
 
 			gradients = tf.gradients(D_xhat, xhat)[0] # is different between arch 1 and 2. Strange. The inputs are of different size, but just an upsampled version of the lower resolution version. Maybe that's why.
 			# Since we take the gradient wrt xhat which is 4 times larger, when we sum the squares of gradients for each pixel we should get a larger gradient penalty for the larger image.
@@ -152,6 +179,8 @@ class subGAN(object):
 			self.g_loss = -tf.reduce_mean(self.D_fake_logits) 
 
 			self.d_loss = self.d_loss_real + self.d_loss_fake
+			if self.D_loss_extra:
+				self.d_loss = self.d_loss + 0.001*tf.reduce_mean(tf.square(self.D_real_logits))
 
 
 		#sampler
@@ -160,11 +189,16 @@ class subGAN(object):
 		inputs_sample = self.inputs_sample
 
 		self.sampler = G(self.z, batch_size= self.sample_num, reuse = True, bn = self.g_batchnorm, layers = self.g_layers, activation = self.activation, output_dim = self.output_size,
-			feature_map_shrink = self.feature_map_shrink, spatial_map_growth = self.spatial_map_growth, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta)
-		self.D_real_sample, self.D_real_logits_sample = D(inputs_sample, batch_size = self.sample_num, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
-		self.D_fake_sample, self.D_fake_logits_sample = D(self.G, batch_size = self.sample_num, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-			feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
+			feature_map_shrink = self.feature_map_shrink, spatial_map_growth = self.spatial_map_growth, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta,
+			 use_wscale = self.use_wscale, use_pixnorm = self.use_pixnorm, useGamma = self.useGamma, gamma = self.gamma)
+		self.D_real_sample, self.D_real_logits_sample = D(inputs_sample, batch_size = self.sample_num, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation,
+		 input_dim = self.input_size, feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha,
+		  useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim, minibatch_std = self.minibatch_std, use_wscale = self.use_wscale,
+		   useTau = self.useTau, tau = self.tau)
+		self.D_fake_sample, self.D_fake_logits_sample = D(self.G, batch_size = self.sample_num, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation,
+		 input_dim = self.input_size, feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha,
+		  useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim, minibatch_std = self.minibatch_std, use_wscale = self.use_wscale,
+		   useTau = self.useTau, tau = self.tau)
 
 
 		if self.loss == 'RaLS':
@@ -174,6 +208,8 @@ class subGAN(object):
 			self.d_loss_fake_sample = tf.reduce_mean(
 				tf.square(self.D_fake_logits_sample - tf.reduce_mean(self.D_real_logits_sample) + 1))
 			self.d_loss_sample = (self.d_loss_real_sample + self.d_loss_fake_sample) / 2
+			if self.D_loss_extra:
+				self.d_loss_sample = self.d_loss_sample + 0.001*tf.reduce_mean(tf.square(self.D_real_logits_sample))
 
 			# g_loss
 			self.g_loss_sample = (tf.reduce_mean(tf.square(self.D_fake_logits_sample - tf.reduce_mean(self.D_real_logits_sample))) / 2 +
@@ -181,6 +217,8 @@ class subGAN(object):
 		elif self.loss == 'ns':
 			self.d_loss_sample = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_real_logits_sample,labels=tf.ones_like(self.D_real_logits_sample)) + tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits_sample,labels=tf.zeros_like(self.D_fake_logits)))
 			self.g_loss_sample = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_fake_logits_sample,labels=tf.ones_like(self.D_fake_logits_sample)))
+			if self.D_loss_extra:
+				self.d_loss_sample = self.d_loss_sample + 0.001*tf.reduce_mean(tf.square(self.D_real_logits_sample))
 		elif self.loss == 'wa':
 			hyperparameter = 10
 			gamma = tf.random_uniform(shape=[self.sample_num,1,1,1],minval=0., maxval=1.)
@@ -188,7 +226,9 @@ class subGAN(object):
 			xhat = tf.add( tf.multiply(gamma,self.inputs_sample), tf.multiply((1-gamma),self.sampler))
 
 			_, D_xhat = D(xhat, batch_size = self.sample_num, reuse = True, bn = self.d_batchnorm, layers = self.d_layers, activation = self.activation, input_dim = self.input_size,
-				feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha, beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim)
+				feature_map_growth = self.feature_map_growth, spatial_map_shrink = self.spatial_map_shrink, stage = self.stage, alpha = self.alpha, useAlpha = self.useAlpha,
+				 beta = self.beta, useBeta = self.useBeta, z_dim = self.z_dim, minibatch_std = self.minibatch_std, use_wscale = self.use_wscale,
+				  useTau = self.useTau, tau = self.tau)
 
 
 			gradients = tf.gradients(D_xhat, xhat)[0]
@@ -205,6 +245,8 @@ class subGAN(object):
 			self.g_loss_sample = -tf.reduce_mean(self.D_fake_logits_sample) 
 
 			self.d_loss_sample = D_loss_real + D_loss_fake
+			if self.D_loss_extra:
+				self.d_loss_sample = self.d_loss_sample + 0.001*tf.reduce_mean(tf.square(self.D_real_logits_sample))
 
 		"""data visualization"""
 		self.z_sum = histogram_summary("z", self.z)
@@ -252,11 +294,21 @@ class subGAN(object):
 			os.makedirs('../logs/'+self.model_dir_full)
 		self.writer = SummaryWriter('../logs/'+self.model_dir_full, self.sess.graph)
 
-		#sample_z = np.random.uniform(-1, 1, size=(self.sample_num, self.z_dim))
+		if self.z_distr == 'u':
+			sample_z = np.random.uniform(-1, 1, size=(self.sample_num, self.z_dim)).astype(np.float32)
+			if self.normalize_z:
+				sample_z /= np.sqrt(np.sum(np.square(sample_z)))
+		elif self.z_distr == 'g':
+			sample_z = np.random.normal(0,1,size=(self.sample_num, self.z_dim)).astype(np.float32)
+			if self.normalize_z:
+				sample_z /= np.sqrt(np.sum(np.square(sample_z)))
+
 		sample_z = np.full((self.sample_num, self.z_dim), 0.1).astype(np.float32)
 
 		alpha = np.float32(0.0)
 		beta = np.float32(0.0)
+		gamma = np.float32(self.z_dim/2)
+		tau = np.float32(0.0)
 
 		sample_files = self.data[0:self.sample_num]
 		if self.useAlpha == 'n':
@@ -321,7 +373,14 @@ class subGAN(object):
                 #batch_images_shape = batch_images.shape #HACK
                 #batch_images = np.reshape(batch_images, [batch_images_shape[0], batch_images_shape[3], batch_images_shape[1], batch_images_shape[2]]) #HACK
 
-				# batch_z = np.random.uniform(-1, 1,[self.batch_size, self.z_dim]).astype(np.float32)
+				if self.z_distr == 'u':
+					batch_z = np.random.uniform(-1, 1, size=(self.batch_size, self.z_dim)).astype(np.float32)
+					if self.normalize_z:
+						batch_z /= np.sqrt(np.sum(np.square(batch_z)))
+				elif self.z_distr == 'g':
+					batch_z = np.random.normal(0,1,size=(self.batch_size, self.z_dim)).astype(np.float32)
+					if self.normalize_z:
+						batch_z /= np.sqrt(np.sum(np.square(batch_z)))
 				batch_z = np.full((self.batch_size, self.z_dim), 0.1).astype(np.float32)
 
 
@@ -334,14 +393,14 @@ class subGAN(object):
 				# self.writer.add_summary(summary_str, counter)
 
 				errD_fake = self.d_loss_fake.eval(
-					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
 				errD_real = self.d_loss_real.eval(
-					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
 				errG = self.g_loss.eval(
-					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
-				d_real_logits = self.D_real_logits.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
-				d_fake_logits = self.D_fake_logits.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
-				g_out = self.G.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
+				d_real_logits = self.D_real_logits.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
+				d_fake_logits = self.D_fake_logits.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
+				g_out = self.G.eval({self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
                 
 				print(
 					"Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" %
@@ -369,7 +428,7 @@ class subGAN(object):
 						[self.sampler, self.d_loss_sample, self.g_loss_sample, self.D_real_sample, self.D_fake_sample],
 						feed_dict={
 							self.z: sample_z,
-							self.inputs_sample: sample_inputs, self.alpha: alpha, self.beta: beta
+							self.inputs_sample: sample_inputs, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau
 						},
 					)
 					if not os.path.exists('../{}/{}'.format('train_samples', self.model_dir_full)):
@@ -386,13 +445,13 @@ class subGAN(object):
 
 				# Update D network
 				_, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
-					self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
 
 				self.writer.add_summary(summary_str, counter)
 
 				# Update G network
 				_, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
-					self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
 
 				self.writer.add_summary(summary_str, counter)
 
@@ -402,18 +461,24 @@ class subGAN(object):
 					print('alpha: ', alpha)
 				if beta < 1:
 					beta = beta + 0.5
+				if gamma < self.z_dim:
+					gamma = gamma + 0.25*self.z_dim
+				if tau < 0.5:
+					tau = tau + 0.25
 				if idx == 2:  # REMOVE LATER!!!
 					alpha = 1.0
 					beta = 1.0
+					gamma = self.z_dim
+					tau = 0.5
 					errD_fake = self.d_loss_fake.eval(
-						{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+						{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
 					errD_real = self.d_loss_real.eval(
-						{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+						{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
 					errG = self.g_loss.eval(
-						{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
-					d_real_logits = self.D_real_logits.eval({self.inputs: batch_images, self.alpha: alpha, self.beta: beta})
-					d_fake_logits = self.sess.run(self.D_fake_logits, feed_dict={self.z: batch_z, self.alpha: alpha, self.beta: beta})
-					g_out = self.sess.run(self.G, feed_dict={self.z: batch_z, self.alpha: alpha, self.beta: beta})
+						{self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
+					d_real_logits = self.D_real_logits.eval({self.inputs: batch_images, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
+					d_fake_logits = self.sess.run(self.D_fake_logits, feed_dict={self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
+					g_out = self.sess.run(self.G, feed_dict={self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
 	                
 					print(
 						"Epoch: [%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" %
@@ -425,12 +490,12 @@ class subGAN(object):
 						[self.sampler, self.d_loss_sample, self.g_loss_sample, self.D_real_sample, self.D_fake_sample],
 						feed_dict={
 							self.z: sample_z,
-							self.inputs_sample: sample_inputs, self.alpha: alpha, self.beta: beta
+							self.inputs_sample: sample_inputs, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau
 						},
 					)
 					print("[Sample] d_loss: %.8f, g_loss: %.8f" %
 						(d_loss, g_loss))
-					g_out = self.sess.run(self.G, feed_dict={self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					g_out = self.sess.run(self.G, feed_dict={self.z: batch_z, self.alpha: alpha, self.beta: beta, self.gamma: gamma, self.tau: tau})
 					print('g_out: ', g_out)
 					self.save(counter)
 					break
@@ -571,6 +636,11 @@ class subGAN(object):
 				print('oldtensorshape: ', tensorValue.shape)
 				print('newtensorshape: ', tensor.shape)
 				tensor_name_split = tensor_name.split('/')
+				name = tensor_name_split[1]
+				if name[-2].isdigit():
+					layer = int(name[-2:])
+				elif name[-1].isdigit():
+					layer = int(name[-1])
 				if tensor_name_split[-1] == 'bias':
 					tensorValue = tensorValue.astype(np.float32)
 					assign_op = tf.assign(tensor, tensorValue) # why don't we have this in the dictionary directly?
@@ -585,7 +655,7 @@ class subGAN(object):
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 				elif tensor_name_split[-1] == 'kernel':
-					if tensorValue.shape[1] != 1:
+					if tensorValue.shape[1] != 1: # generator first layer
 						filterSize = tensorValue.shape[1]
 						maps = tensorValue.shape[0]
 						channels = maps
@@ -593,15 +663,29 @@ class subGAN(object):
 						w = int(np.sqrt(imSize))
 						h = w
 						tensorValue = np.reshape(tensorValue, [maps, w, h, channels])
-						temp = np.concatenate((tensorValue, np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
-						temp = np.concatenate((temp,np.random.normal(0,0.01,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))),axis = 0)
-						temp = np.reshape(temp, [maps*2,filterSize*2])
-						temp = temp.astype(np.float32)
+						stddev = np.sqrt(2/(self.z_dim))
+						if self.use_wscale:
+							factor = np.sqrt(2)
+							temp = np.concatenate((factor*tensorValue, np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+							temp = np.concatenate((temp,np.random.normal(0,stddev,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))),axis = 0)
+							temp = np.reshape(temp, [maps*2,filterSize*2])
+							temp = temp.astype(np.float32)
+						else:
+							temp = np.concatenate((tensorValue, np.random.normal(0,stddev,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+							temp = np.concatenate((temp,np.random.normal(0,stddev,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))),axis = 0)
+							temp = np.reshape(temp, [maps*2,filterSize*2])
+							temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
-					else: 
-						temp = np.concatenate((tensorValue, np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1]))), axis = 0)
-						temp = temp.astype(np.float32)
+					else: # discriminator last layer
+						stddev = np.sqrt(2/(self.z_dim))
+						if self.use_wscale:
+							factor = np.sqrt(2)
+							temp = np.concatenate((factor*tensorValue, np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1]))), axis = 0)
+							temp = temp.astype(np.float32)
+						else:
+							temp = np.concatenate((tensorValue, np.random.normal(0,stddev,(tensorValue.shape[0],tensorValue.shape[1]))), axis = 0)
+							temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 				elif tensor_name_split[-1] == 'w':
@@ -609,28 +693,94 @@ class subGAN(object):
 						tensorValue = tensorValue.astype(np.float32)
 						assign_op = tf.assign(tensor, tensorValue)
 					# double fourth axis
-					elif tensorValue.shape[2] == tensor.shape[2]:
-						temp = np.concatenate((tensorValue,np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
-						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
-						temp = temp.astype(np.float32)
+					elif tensorValue.shape[2] == tensor.shape[2]: # same number of input feature maps, double the output maps (discriminator)
+						if tensor_name_split[0] == 'discriminator':
+							layer = self.d_layers+1-layer
+						if layer % 2 == 0:
+							width = 2**(1+layer/2)
+						else:
+							width = 2**(1+(layer+1)/2)
+						height = width
+						stddev = np.sqrt(2/(tensorValue.shape[2]*width*height))
+						if self.use_wscale:
+							factor = 1
+							temp = np.concatenate((factor*tensorValue,np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+							# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+							temp = temp.astype(np.float32)
+						else:
+							temp = np.concatenate((tensorValue,np.random.normal(0,stddev,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+							# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+							temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					# double third axis
-					elif tensorValue.shape[3] == tensor.shape[3]:
-						temp = np.concatenate((tensorValue,np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
-						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])), tensorValue), axis = 2)
-						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
-						temp = temp.astype(np.float32)
+					elif tensorValue.shape[3] == tensor.shape[3]: # double the number of input feature maps, same number of output maps (generator)
+						if tensor_name_split[0] == 'discriminator': # This actually never happens. I can remove the two rows.
+							layer = self.d_layers+1-layer
+						if layer % 2 == 0:
+							width = 2**(1+layer/2)
+						else:
+							width = 2**(1+(layer+1)/2)
+						height = width
+						stddev = np.sqrt(2/(tensorValue.shape[2]*width*height))
+						if self.use_wscale:
+							factor = np.sqrt(2)
+							temp = np.concatenate((factor*tensorValue,np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
+							temp = temp.astype(np.float32)
+						else:
+							temp = np.concatenate((tensorValue,np.random.normal(0,stddev,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
+							# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])), tensorValue), axis = 2)
+							# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 2)
+							temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 						# self.sess.run(assign_op)
 					# double both third and fourth axis
 					else:
-						temp = np.concatenate((tensorValue,np.random.normal(0,0.01,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
-						temp = np.concatenate((temp,np.random.normal(0,0.01,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
-						# temp = np.concatenate((np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3])), temp), axis = 2)
-						# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
-						# temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
-						temp = temp.astype(np.float32)
+						if tensor_name_split[0] == 'discriminator':
+							layer = self.d_layers+1-layer
+						if layer % 2 == 0:
+							width = 2**(1+layer/2)
+						else:
+							width = 2**(1+(layer+1)/2)
+						height = width
+						stddev = np.sqrt(2/(tensorValue.shape[2]*width*height))
+						if 'd_std_h' in tensor_name_split[1]:
+							if self.use_wscale:
+								factor = np.sqrt(2)
+								temp = np.concatenate((factor*tensorValue[:,:,:-1,:],np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2]-1,tensorValue.shape[3]))), axis = 3)
+								print(temp.shape)
+								temp = np.concatenate((temp,np.random.normal(0,1,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+								print(temp.shape)
+								stdpart = tensorValue[:,:,-1,:]
+								stdpart = np.reshape(stdpart,(stdpart.shape[0],stdpart.shape[1],1,stdpart.shape[2]))
+								print(stdpart.shape)
+								temp2 = np.concatenate((stdpart,np.random.normal(0,1,(stdpart.shape[0],stdpart.shape[1],stdpart.shape[2],stdpart.shape[3]))), axis = 3)
+								print(temp2.shape)
+								temp = np.concatenate((temp, temp2), axis = 2)
+								print(temp.shape)
+								temp = temp.astype(np.float32)
+							else:
+								# IF ABOVE CORRECT; COPY SAME METHOD HERE
+								temp = np.concatenate((tensorValue[:,:,:-1,:],np.random.normal(0,stddev,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2]-1,tensorValue.shape[3]))), axis = 3)
+								temp = np.concatenate((temp, tensorValue[:,:,-1,:]), axis = 3)
+								temp = np.concatenate((temp,np.random.normal(0,stddev,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+								# temp = np.concatenate((np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3])), temp), axis = 2)
+								# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+								# temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+								temp = temp.astype(np.float32)
+						else:
+							if self.use_wscale:
+								factor = np.sqrt(2)
+								temp = np.concatenate((factor*tensorValue,np.random.normal(0,1,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+								temp = np.concatenate((temp,np.random.normal(0,1,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+								temp = temp.astype(np.float32)
+							else:
+								temp = np.concatenate((tensorValue,np.random.normal(0,stddev,(tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+								temp = np.concatenate((temp,np.random.normal(0,stddev,(temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+								# temp = np.concatenate((np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3])), temp), axis = 2)
+								# temp = np.concatenate((np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3])),np.zeros((tensorValue.shape[0],tensorValue.shape[1],tensorValue.shape[2],tensorValue.shape[3]))), axis = 3)
+								# temp = np.concatenate((temp,np.zeros((temp.shape[0],temp.shape[1],temp.shape[2],temp.shape[3]))), axis = 2)
+								temp = temp.astype(np.float32)
 						assign_op = tf.assign(tensor, temp)
 				
 				self.sess.run(assign_op)

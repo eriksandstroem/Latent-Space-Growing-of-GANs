@@ -18,31 +18,36 @@ output_dims = '128.128.128.128.128.128'
 # output_dims = '32.32.32.32.128.128.128'
 useAlpha = 'n.n.n.n.n.n'
 useBeta = 'n.y.y.y.y.y'
+useGamma = 'n.y.y.y.y.y'
+useTau = 'n.y.y.y.y.y'
 feature_map_shrink = 'n' # ['n', 'f'] generator
 feature_map_growth = 'n' # ['n', 'f'] discriminator
 spatial_map_shrink = 'n' # ['n', 'f'] discriminator
 spatial_map_growth = 'n' # ['n', 'f'] generator
 stage = 'f.f.f.f.f.f'
-loss = 'ns' # ['RaLS', 'ns', 'wa']
-z_distr = 'u' # ['u', 'g']
+loss = 'wa' # ['RaLS', 'ns', 'wa']
+z_distr = 'g' # ['u', 'g']
 activation = 'lrelu'
 weight_init = 'z' # ['z', 'u', 'g', 'x', 'he']
-lr = 0.0002
+lr = 0.001
 beta1 = 0.0
 beta2 = 0.99
 epsilon = 0.00000001
 batch_size = 1
 sample_num = 64
-gpu = 1
+gpu = 0
 g_batchnorm = True
 d_batchnorm = True
 normalize_z = False
 crop = True
 trainflag = True
 visualize = False
-
-
-model_dir = z_dims +'_'+ epochs +'_'+ g_layers +'_'+ d_layers +'_'+ output_dims +'_'+feature_map_shrink+feature_map_growth+spatial_map_shrink+spatial_map_growth+'_'+ loss +'_'+z_distr +'_'+ activation +'_'+ weight_init +'_'+ str(batch_size) +'_'+str(g_batchnorm) +'_'+ str(d_batchnorm) +'_'+ str(normalize_z)
+minibatch_std = True
+use_wscale = True
+use_pixnorm = True
+D_loss_extra = True
+G_run_avg = True
+# THEN ONLY ADAPTIVE BATCH SIZE LEFT
 
 flags = tf.app.flags
 flags.DEFINE_string("z_dims", z_dims,
@@ -59,6 +64,10 @@ flags.DEFINE_string("useAlpha", useAlpha,
     "Use spatial smoothing or not")
 flags.DEFINE_string("useBeta", useBeta,
     "Use feature channel smoothing or not")
+flags.DEFINE_string("useGamma", useGamma,
+    "Use pixel normalization smoothing or not")
+flags.DEFINE_string("useTau", useTau,
+    "Use minibatch std smoothing or not")
 flags.DEFINE_string("feature_map_shrink", feature_map_shrink,
     "How fast the nbr of feature maps should decrease in the generator")
 flags.DEFINE_string("feature_map_growth", feature_map_growth,
@@ -97,14 +106,26 @@ flags.DEFINE_boolean(
     "trainflag", trainflag, "True for training, False for testing")
 flags.DEFINE_boolean("visualize", visualize,
                      "True for visualizing, test mode")
-flags.DEFINE_string("model_dir", model_dir,
-                     "Directory name to save the images/models/logs")
+flags.DEFINE_boolean("minibatch_std", minibatch_std,
+                     "True using minibatch_std")
+flags.DEFINE_boolean("use_wscale", use_wscale,
+                     "True using use_wscale")
+flags.DEFINE_boolean("use_pixnorm", use_pixnorm,
+                     "True using use_pixnorm")
+flags.DEFINE_boolean("D_loss_extra", D_loss_extra,
+                     "True using D_loss_extra")
+flags.DEFINE_boolean("G_run_avg", G_run_avg,
+                     "True using G_run_avg")
+# flags.DEFINE_string("model_dir", model_dir,
+#                      "Directory name to save the images/models/logs")
 
 FLAGS = flags.FLAGS
 
 
 def main(_):
     pp.pprint(flags.FLAGS.__flags)
+    model_dir = FLAGS.z_dims +'_'+ FLAGS.epochs +'_'+ FLAGS.g_layers +'_'+ FLAGS.d_layers +'_'+ FLAGS.output_dims +'_'+FLAGS.feature_map_shrink+FLAGS.feature_map_growth+FLAGS.spatial_map_shrink+FLAGS.spatial_map_growth+'_'+ FLAGS.loss +'_'+FLAGS.z_distr +'_'+ FLAGS.activation +'_'+ FLAGS.weight_init +'_'+ str(FLAGS.batch_size) +'_'+str(FLAGS.g_batchnorm) +'_'+ str(FLAGS.d_batchnorm) +'_'+ str(FLAGS.normalize_z)+'_'+ str(FLAGS.minibatch_std) +'_'+str(FLAGS.use_wscale) +'_'+ str(FLAGS.use_pixnorm) +'_'+ str(FLAGS.D_loss_extra)
+
 
     gan = growGAN(
         z_dims = FLAGS.z_dims,
@@ -114,6 +135,8 @@ def main(_):
         output_dims = FLAGS.output_dims,
         useAlpha = FLAGS.useAlpha,
         useBeta = FLAGS.useBeta,
+        useGamma = FLAGS.useGamma,
+        useTau = FLAGS.useTau,
         feature_map_shrink = FLAGS.feature_map_shrink,
         feature_map_growth = FLAGS.feature_map_growth,
         spatial_map_shrink = FLAGS.spatial_map_shrink,
@@ -136,7 +159,12 @@ def main(_):
         crop = FLAGS.crop,
         trainflag = FLAGS.trainflag,
         visualize = FLAGS.visualize,
-        model_dir = FLAGS.model_dir) 
+        model_dir = model_dir,
+        minibatch_std = FLAGS.minibatch_std,
+        use_wscale = FLAGS.use_wscale,
+        use_pixnorm = FLAGS.use_pixnorm,
+        D_loss_extra = FLAGS.D_loss_extra,
+        G_run_avg = FLAGS.G_run_avg) 
 
     show_all_variables()
 

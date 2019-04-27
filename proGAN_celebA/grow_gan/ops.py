@@ -80,7 +80,7 @@ def minibatch_stddev_layer(x, group_size=4): # POTENTIALLY REMOVE GROUP SIZE THI
 
 
 
-def dense(input_, output_dim, name, useBeta = False, beta = 1, use_wscale = True):
+def dense(input_, output_dim, name, useBeta = 'n', beta = 1, use_wscale = True):
     with tf.variable_scope(name):
         stddev = np.sqrt(2/int(input_.get_shape()[-1]))
         if use_wscale:

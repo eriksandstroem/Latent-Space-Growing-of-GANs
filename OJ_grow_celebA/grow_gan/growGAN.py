@@ -19,6 +19,8 @@ class growGAN(object):
 			output_dims,
 			useAlpha,
 			useBeta,
+			useGamma,
+			useTau,
 			feature_map_shrink,
 			feature_map_growth,
 			spatial_map_shrink,
@@ -41,7 +43,12 @@ class growGAN(object):
 			crop,
 			trainflag,
 			visualize,
-			model_dir):
+			model_dir,
+			minibatch_std,
+			use_wscale,
+			use_pixnorm,
+			D_loss_extra,
+			G_run_avg):
 
 		self.z_dims = z_dims
 		self.epochs = epochs
@@ -50,6 +57,8 @@ class growGAN(object):
 		self.output_dims = output_dims
 		self.useAlpha = useAlpha
 		self.useBeta = useBeta
+		self.useGamma = useGamma
+		self.useTau = useTau
 		self.feature_map_shrink = feature_map_shrink
 		self.feature_map_growth = feature_map_growth
 		self.spatial_map_shrink = spatial_map_shrink
@@ -73,6 +82,11 @@ class growGAN(object):
 		self.trainflag = trainflag
 		self.visualize = visualize
 		self.model_dir = model_dir
+		self.minibatch_std = minibatch_std
+		self.use_wscale = use_wscale
+		self.use_pixnorm = use_pixnorm
+		self.D_loss_extra = D_loss_extra
+		self.G_run_avg = G_run_avg
 
 	def train(self):
 		self.z_dims = self.z_dims.split('.')
@@ -88,6 +102,8 @@ class growGAN(object):
 		self.stage = self.stage.split('.')
 		self.useAlpha = self.useAlpha.split('.')
 		self.useBeta = self.useBeta.split('.')
+		self.useGamma = self.useGamma.split('.')
+		self.useTau = self.useTau.split('.')
 
 		nbrCycles = len(self.z_dims)
 
@@ -110,7 +126,9 @@ class growGAN(object):
 					"output_dims" : self.output_dims[i-1],
 					"stage" : self.stage[i-1],
 					"useAlpha" : self.useAlpha[i-1],
-					"useBeta" : self.useBeta[i-1]
+					"useBeta" : self.useBeta[i-1],
+					"useGamma" : self.useGamma[i-1],
+					"useTau" : self.useTau[i-1]
 				}
 			else:
 				oldSpecs = {}
@@ -124,6 +142,8 @@ class growGAN(object):
 					d_layers = self.d_layers[i],
 					useAlpha = self.useAlpha[i],
 					useBeta = self.useBeta[i],
+					useGamma = self.useGamma[i],
+					useTau = self.useTau[i],
 					feature_map_shrink = self.feature_map_shrink,
 					feature_map_growth = self.feature_map_growth,
 					spatial_map_shrink = self.spatial_map_shrink,
@@ -147,6 +167,11 @@ class growGAN(object):
 					crop = self.crop,
 					visualize = self.visualize,
 					model_dir = self.model_dir,
+					minibatch_std = self.minibatch_std,
+					use_wscale = self.use_wscale,
+					use_pixnorm = self.use_pixnorm,
+					D_loss_extra = self.D_loss_extra,
+					G_run_avg = self.G_run_avg,
 					oldSpecs = oldSpecs)
 
 
