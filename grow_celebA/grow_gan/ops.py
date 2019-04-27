@@ -61,7 +61,7 @@ def conv_cond_concat(x, y):
 
 
 def dense(input_, output_dim, name,
-            kernel_initializer, bias_initializer, useBeta = False, beta = 1):
+            kernel_initializer, bias_initializer, useBeta = 'n', beta = 1):
     with tf.variable_scope(name):
 
         kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],

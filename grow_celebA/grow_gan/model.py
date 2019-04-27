@@ -8,7 +8,7 @@ from utils import *
 # fast is that we double the spatial dimension every layer.
 
 def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lrelu', output_dim = 128,
-    feature_map_shrink = 'n', spatial_map_growth = 'n', alpha = 1, useAlpha = 'y', beta = 1, useBeta = 'y'):
+    feature_map_shrink = 'n', spatial_map_growth = 'n', alpha = 1, useAlpha = 'n', beta = 1, useBeta = 'n'):
     with tf.variable_scope("generator") as scope:
         if reuse:
             scope.reuse_variables()
@@ -122,7 +122,7 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
 
 
 def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lrelu', input_dim = 128,
-    feature_map_growth = 'n', spatial_map_shrink = 'n', stage = 'i', alpha = 1, useAlpha = 'y', beta = 1, useBeta = 'y', z_dim = 8):
+    feature_map_growth = 'n', spatial_map_shrink = 'n', stage = 'i', alpha = 1, useAlpha = 'n', beta = 1, useBeta = 'n', z_dim = 8):
     with tf.variable_scope("discriminator") as scope:
         if reuse:
             scope.reuse_variables()
