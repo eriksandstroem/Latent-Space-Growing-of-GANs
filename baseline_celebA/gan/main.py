@@ -3,17 +3,17 @@ import scipy.misc
 import numpy as np
 from glob import glob
 
-from subGAN import subGAN
+from GAN import GAN
 from utils import pp, visualize, show_all_variables
 
 import tensorflow as tf
 
 
 z_dims = 256
-epochs = 44
-g_layers = 2
-d_layers = 3
-output_dims = 4
+epochs = 60
+g_layers = 12
+d_layers = 13
+output_dims = 128
 
 feature_map_shrink = 'n' # ['n', 'f'] generator
 feature_map_growth = 'n' # ['n', 'f'] discriminator
@@ -23,7 +23,7 @@ spatial_map_growth = 'n' # ['n', 'f'] generator
 loss = 'wa' # ['RaLS', 'ns', 'wa']
 z_distr = 'g' # ['u', 'g']
 activation = 'lrelu'
-lr = 0.001
+lr = 0.00001 #<-- old lr
 beta1 = 0.0
 beta2 = 0.99
 epsilon = 0.00000001
@@ -33,8 +33,8 @@ gpu = 1
 normalize_z = True
 crop = True
 minibatch_std = True
-use_wscale = True
-use_pixnorm = True
+use_wscale = False
+use_pixnorm = False
 D_loss_extra = False
 
 
@@ -89,7 +89,7 @@ FLAGS = flags.FLAGS
 
 def main(_):
     pp.pprint(flags.FLAGS.__flags)
-    model_dir = str(FLAGS.z_dims) +'_'+ str(FLAGS.epochs) +'_'+ str(FLAGS.g_layers) +'_'+ str(FLAGS.d_layers) +'_'+ str(FLAGS.output_dims) +'_'+FLAGS.feature_map_shrink+FLAGS.feature_map_growth+FLAGS.spatial_map_shrink+FLAGS.spatial_map_growth+'_'+ FLAGS.loss +'_'+FLAGS.z_distr +'_'+ FLAGS.activation +'_'+ str(FLAGS.batch_size) +'_'+ str(FLAGS.normalize_z)+'_'+ str(FLAGS.minibatch_std) +'_'+str(FLAGS.use_wscale) +'_'+ str(FLAGS.use_pixnorm) +'_'+ str(FLAGS.D_loss_extra)
+    model_dir = str(FLAGS.lr)+'_'+str(FLAGS.z_dims) +'_'+ str(FLAGS.epochs) +'_'+ str(FLAGS.g_layers) +'_'+ str(FLAGS.d_layers) +'_'+ str(FLAGS.output_dims) +'_'+FLAGS.feature_map_shrink+FLAGS.feature_map_growth+FLAGS.spatial_map_shrink+FLAGS.spatial_map_growth+'_'+ FLAGS.loss +'_'+FLAGS.z_distr +'_'+ FLAGS.activation +'_'+ str(FLAGS.batch_size) +'_'+ str(FLAGS.normalize_z)+'_'+ str(FLAGS.minibatch_std) +'_'+str(FLAGS.use_wscale) +'_'+ str(FLAGS.use_pixnorm) +'_'+ str(FLAGS.D_loss_extra)
 
     run_config = tf.ConfigProto()
     run_config.gpu_options.allow_growth = True

@@ -365,7 +365,7 @@ class GAN(object):
 
 					xaxis = np.append(xaxis, counter*self.batch_size)
 
-					if np.mod(counter, 5000) == 0:	
+					if np.mod(counter, 10000) == 0:	
 						plt.figure()
 						plt.grid(True)
 						plt.xlabel('Real Examples Shown')
