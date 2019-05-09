@@ -125,6 +125,9 @@ class growGAN(object):
 			else:
 				oldSpecs = {}
 
+			# if self.output_dims[i] == 32:   # REMEMBER TO REMOVE THESE TWO LINES LATER!!!!!
+			# 	self.lr = self.lr/10
+
 			with tf.Session(config=run_config) as sess: 
 				subgan = subGAN(
 					sess = sess,

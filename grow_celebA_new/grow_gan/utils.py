@@ -27,30 +27,24 @@ def show_all_variables():
     model_vars = tf.trainable_variables()
     slim.model_analyzer.analyze_vars(model_vars, print_info=True)
 
-def get_image_interpolate(image_path, z_dim, input_height, input_width,
+def get_image_interpolate(image_path, input_height, input_width,
               resize_height=128, resize_width=128,
               crop=True, grayscale=False, alpha = 1.0):
     image = imread(image_path, grayscale)
+    im1 = transform(image, input_height, input_width,
+                     resize_height, resize_width, crop)
     if crop:
-        imz1 = center_crop(
+        cropped_image = center_crop(
             image, input_height, input_width,
-            z_dim//2, z_dim//2)
-        imz2 = center_crop(
-            image, input_height, input_width,
-            z_dim//4, z_dim//4)
+            int(resize_height/2), int(resize_width/2))
     else:
-        imz1 = scipy.misc.imresize(
-            image, [z_dim//2, z_dim//2])
-        imz2 = scipy.misc.imresize(
-            image, [z_dim//4, z_dim//4])
-    imz1 = scipy.misc.imresize(
-            imz1, [resize_height, resize_width], interp = 'nearest')
-    imz1 = np.array(imz1) / 127.5 - 1.
-    imz2 = scipy.misc.imresize(
-            imz2, [resize_height, resize_width], interp = 'nearest')
-    imz2 = np.array(imz2) / 127.5 - 1.
+        cropped_image = scipy.misc.imresize(
+            image, [int(resize_height/2), int(resize_width/2)])
+    im2 = scipy.misc.imresize(
+            cropped_image, [resize_height, resize_width], interp = 'nearest')
+    im2 = np.array(im2) / 127.5 - 1.
 
-    return imz2*(1-alpha)+imz1*alpha
+    return im2*(1-alpha)+im1*alpha
 
 def get_image(image_path, input_height, input_width,
               resize_height=128, resize_width=128,

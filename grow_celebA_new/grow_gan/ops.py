@@ -59,45 +59,41 @@ def conv_cond_concat(x, y):
     return concat([
         x, y * tf.ones([x_shapes[0], x_shapes[1], x_shapes[2], y_shapes[3]])], 3)
 
-def act(x, activation):
-    if activation == 'lrelu':
-        return lrelu(x)              
-    elif activation == 'relu':
-        return relu(x)
-
-def pixel_norm(x, epsilon=1e-8):
-    with tf.variable_scope('PixelNorm'):
-      return x * tf.rsqrt(tf.reduce_mean(tf.square(x), axis=3, keepdims=True) + epsilon)
-
-
-def minibatch_stddev_layer(x, group_size=4): # POTENTIALLY REMOVE GROUP SIZE THING
+def minibatch_stddev_layer(x, useTau = 'n', tau = 0.5): # POTENTIALLY REMOVE GROUP SIZE THING
     with tf.variable_scope('MinibatchStddev'):
-        group_size = tf.minimum(group_size, tf.shape(x)[0])     # Minibatch must be divisible by (or smaller than) group_size.
-        s = x.shape                                             # [NHWC]  Input shape.
-        y = tf.reshape(x, [group_size, -1, s[3], s[1], s[2]])   # [GMCHW] Split minibatch into M groups of size G.
-        y = tf.cast(y, tf.float32)                              # [GMHWC] Cast to FP32.
-        y -= tf.reduce_mean(y, axis=0, keepdims=True)           # [GMHWC] Subtract mean over group.
-        y = tf.reduce_mean(tf.square(y), axis=0)                # [MHWC]  Calc variance over group.
-        y = tf.sqrt(y + 1e-8)                                   # [MHWC]  Calc stddev over group.
-        y = tf.reduce_mean(y, axis=[1,2,3], keepdims=True)      # [M111]  Take average over fmaps and pixels.
-        y = tf.cast(y, x.dtype)                                 # [M111]  Cast back to original data type.
-        y = tf.tile(y, [group_size, s[1], s[2], 1])             # [NHW1]  Replicate over group and pixels.
-        return tf.concat([x, y], axis=3)                        # [NHW(C+1)]  Append as new fmap.
+        if useTau == 'y':
+            s = tf.shape(x)                                    
+            y = tf.cast(x, tf.float32)                           
+            y -= tf.reduce_mean(y, axis=0, keepdims=True) 
+            y = tf.reduce_mean(tf.square(y), axis=0)
+            y = tf.sqrt(y+ 1e-8)
+            stdold = y[:,:,:s[3]//2] 
+            stdnew = y[:,:,s[3]//2:]
+            y = (1.-tau)*tf.reduce_mean(stdold)+tau*tf.reduce_mean(stdnew)                   
+            y = tf.cast([[[[y]]]], x.dtype)                
+            y = tf.tile(y, [s[0], s[1], s[2], 1])               
+            return tf.concat([x, y], axis=3)      
 
-
-
-def dense(input_, output_dim, name, useBeta = 'n', beta = 1, use_wscale = True):
-    with tf.variable_scope(name):
-        stddev = np.sqrt(2/int(input_.get_shape()[-1]))
-        if use_wscale:
-            wscale = tf.constant(np.float32(stddev), name='wscale')
-            kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
-                            initializer=tf.random_normal_initializer(0,1))*wscale
         else:
-            kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
-                            initializer=tf.random_normal_initializer(0,stddev=stddev))
+            s = tf.shape(x)                                     
+            y = tf.cast(x, tf.float32)                           
+            y -= tf.reduce_mean(y, axis=0, keepdims=True) 
+            y = tf.reduce_mean(tf.square(y), axis=0)
+            y = tf.sqrt(y+ 1e-8)
+            y = tf.reduce_mean(y)                   
+            y = tf.cast([[[[y]]]], x.dtype)                
+            y = tf.tile(y, [s[0], s[1], s[2], 1])               
+            return tf.concat([x, y], axis=3)   
+
+
+def dense(input_, output_dim, name,
+            kernel_initializer, bias_initializer, useBeta = 'n', beta = 1):
+    with tf.variable_scope(name):
+
+        kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
+                            initializer=kernel_initializer)
         biases = tf.get_variable(
-        'bias', [output_dim], initializer=tf.zeros_initializer())
+        'bias', [output_dim], initializer=bias_initializer)
         if useBeta == 'y':
             not_new = kernel[0:input_.get_shape()[-1]//2,:]
             all_new = kernel[input_.get_shape()[-1]//2:,:]
@@ -111,16 +107,11 @@ def dense(input_, output_dim, name, useBeta = 'n', beta = 1, use_wscale = True):
 
         return dense
 
-def conv4x4(input_, output_dim, batch_size, name, useBeta = 'n', beta = 1, use_wscale = True):
+def conv4x4(input_, output_dim, batch_size, name, useBeta = 'n', beta = 1):
     with tf.variable_scope(name):
         fan_in = output_dim//(4*4)
-        stddev = np.sqrt(2/fan_in)
-        if use_wscale:
-            wscale = tf.constant(np.float32(stddev), name='wscale')
-            kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
-                            initializer=tf.initializers.random_normal(0,1))*wscale
-        else:
-            kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
+        stddev = np.sqrt(2/fan_in).astype(np.float32)
+        kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
                             initializer=tf.initializers.random_normal(0,stddev=stddev))
         biases = tf.get_variable(
         'biases', [output_dim//(4*4)], initializer=tf.constant_initializer(0.0))
@@ -201,15 +192,11 @@ def downscale2d(x, factor=2):
 
 def conv2d(input_, output_dim,
            k_h=5, k_w=5, d_h=2, d_w=2,
-           name="conv2d", padding = 'SAME', useBeta = 'n', beta = 1, last = False, first =  False, use_wscale = True):
+           name="conv2d", padding = 'SAME', useBeta = 'n', beta = 1, last = False, first =  False, minibstd = False):
+
     with tf.variable_scope(name):
         stddev = np.sqrt(2/(int(input_.get_shape()[-1])*int(input_.get_shape()[1])*int(input_.get_shape()[2])))
-        if use_wscale:
-            wscale = tf.constant(np.float32(stddev), name='wscale')
-            w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
-                            initializer=tf.initializers.random_normal(0,1))*wscale
-        else:
-            w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
+        w = tf.get_variable('w', [k_h, k_w, input_.get_shape()[-1], output_dim],
                             initializer=tf.initializers.random_normal(0,stddev=stddev))
         biases = tf.get_variable(
                 'biases', [output_dim], initializer=tf.constant_initializer(0.0))
@@ -217,24 +204,45 @@ def conv2d(input_, output_dim,
             # if inputchannels = x, outputchannels = x/2, then the OJ was in: x/2 out x/4. This means that x/4 filters of depth x are completely new. This means that x/4 filters are the rest 
             # and each filter has x/2 filter channels that come from the previously restored network. The last x/2 channels need to be multiplied by beta before the filter is used.
             # the filter shape is [3,3,in,out] = [3,3,x,x/2]. We can split this into the two tensors of x/4 filters each.
+            if minibstd:
+                partially_new = w[:,:,:,0:output_dim//2]
+                if first == False: # not used for the first grown layer in the discriminator
+                    partially_new_old = partially_new[:,:,0:input_.get_shape()[-1]//2,:]
+                    partially_new_new = partially_new[:,:,input_.get_shape()[-1]//2:,:]
+                    partially_new_new_block = beta*partially_new_new[:,:,:-1,:]
+                    partially_new_new_std = partially_new_new[:,:,-1,:]
+                    partially_new_new_std = tf.reshape(partially_new_new_std,[partially_new_new_std.shape[0],partially_new_new_std.shape[1],1,partially_new_new_std.shape[2]])
+                    partially_new_new = tf.concat((partially_new_new_block, partially_new_new_std),axis = 2)
+                    partially_new = tf.concat((partially_new_old,partially_new_new), axis = 2)
 
-            partially_new = w[:,:,:,0:output_dim//2]
-            if first == False: # not used for the first grown layer in the discriminator
-                partially_new_old = partially_new[:,:,0:input_.get_shape()[-1]//2,:]
-                partially_new_new = partially_new[:,:,input_.get_shape()[-1]//2:,:]
-                partially_new_new = beta*partially_new_new
-                partially_new = tf.concat((partially_new_old,partially_new_new), axis = 2)
+                all_new = w[:,:,:,output_dim//2:] # we have established that sometimes this isn't zero, even though we want it to be always zero. This can happen if we in the model (now only generator) calls useBeta when 
+                # we shouldn't.
+                if last == False: # not used for the last grown layer in the generator
+                    all_new = tf.scalar_mul(beta,all_new)
+                    biases_old = biases[0:output_dim//2]
+                    biases_new = biases[output_dim//2:]
+                    biases_new = beta*biases_new
+                    biases = tf.concat((biases_old,biases_new), axis = 0, name = 'biases')
 
-            all_new = w[:,:,:,output_dim//2:] # we have established that sometimes this isn't zero, even though we want it to be always zero. This can happen if we in the model (now only generator) calls useBeta when 
-            # we shouldn't.
-            if last == False: # not used for the last grown layer in the generator
-                all_new = tf.scalar_mul(beta,all_new)
-                biases_old = biases[0:output_dim//2]
-                biases_new = biases[output_dim//2:]
-                biases_new = beta*biases_new
-                biases = tf.concat((biases_old,biases_new), axis = 0, name = 'biases')
+                w = tf.concat((partially_new, all_new), axis = 3, name = 'w')
+            else:
+                partially_new = w[:,:,:,0:output_dim//2]
+                if first == False: # not used for the first grown layer in the discriminator
+                    partially_new_old = partially_new[:,:,0:input_.get_shape()[-1]//2,:]
+                    partially_new_new = partially_new[:,:,input_.get_shape()[-1]//2:,:]
+                    partially_new_new = beta*partially_new_new
+                    partially_new = tf.concat((partially_new_old,partially_new_new), axis = 2)
 
-            w = tf.concat((partially_new, all_new), axis = 3, name = 'w')
+                all_new = w[:,:,:,output_dim//2:] # we have established that sometimes this isn't zero, even though we want it to be always zero. This can happen if we in the model (now only generator) calls useBeta when 
+                # we shouldn't.
+                if last == False: # not used for the last grown layer in the generator
+                    all_new = tf.scalar_mul(beta,all_new)
+                    biases_old = biases[0:output_dim//2]
+                    biases_new = biases[output_dim//2:]
+                    biases_new = beta*biases_new
+                    biases = tf.concat((biases_old,biases_new), axis = 0, name = 'biases')
+
+                w = tf.concat((partially_new, all_new), axis = 3, name = 'w')
 
 
 
@@ -245,6 +253,26 @@ def conv2d(input_, output_dim,
         conv = tf.nn.bias_add(conv, biases)
 
         return conv
+
+def dense(input_, output_dim, name, useBeta = 'n', beta = 1):
+    with tf.variable_scope(name):
+        stddev = np.sqrt(2/int(input_.get_shape()[-1]))
+        kernel = tf.get_variable('kernel', [input_.get_shape()[-1], output_dim],
+                            initializer=tf.random_normal_initializer(0,stddev=stddev))
+        biases = tf.get_variable(
+        'bias', [output_dim], initializer=tf.zeros_initializer())
+        if useBeta == 'y':
+            not_new = kernel[0:input_.get_shape()[-1]//2,:]
+            all_new = kernel[input_.get_shape()[-1]//2:,:]
+            all_new = beta*all_new
+
+            kernel = tf.concat((not_new, all_new), axis = 0, name = 'kernel')
+
+        input_ = tf.reshape(input_, [-1,input_.get_shape()[-1]])
+        dense = tf.matmul(input_, kernel)
+        dense = tf.nn.bias_add(dense, biases)
+
+        return dense
 
 def apply_bias(x):
     b = tf.get_variable('bias', shape=[x.shape[1]], initializer=tf.constant_initializer(0.0))
@@ -336,4 +364,4 @@ def sigmoid_cross_entropy_with_logits(x, y):
             logits=x, labels=y)
     except BaseException:
         return tf.nn.sigmoid_cross_entropy_with_logits(
-            logits=x, targets=y)
+logits=x, targets=y)

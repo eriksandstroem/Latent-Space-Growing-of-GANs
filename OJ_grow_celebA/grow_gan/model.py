@@ -39,9 +39,6 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                 # fully-connected layers (equivalent to 4x4 conv)
                 print('batch or sample size: ', batch_size)
                 h = act(conv4x4(z, int(z.get_shape()[-1])*4*4, batch_size, name = 'g_h'+str(i+1), useBeta = useBeta, beta = beta, use_wscale = use_wscale), activation)
-                # steffe1 = h
-                h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
-                # steffe2 = h
                 print('g_h1:', h.get_shape())
             else:
                 if spatial_map_growth == 'n' and i % 2 == 0 and int(h.get_shape()[1]) < output_dim:
@@ -55,94 +52,62 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                         if i <= layers - 2 - 2*useBetaIdx:
                             if i == layers - 2 - 2*useBetaIdx:          
                                 h = act(conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', useBeta = useBeta, beta = beta, last = True, use_wscale = use_wscale), activation)
-                                # if i == 2:
-                                #     steffe1 = h
-                                h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
-                                # if i == 2:
-                                #     steffe2 = h
+                                if use_pixnorm:
+                                    h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
                             else:            
                                 h = act(conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', useBeta = useBeta, beta = beta, use_wscale = use_wscale), activation)
-                                # if i == 2:
-                                #     steffe1 = h
-                                h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
-                                # if i == 2:
-                                #     steffe2 = h
-                                # if i ==2:
-                                #     print('returning this coming layer FOR zdim 32!')
-                                #     stoffe = h
+                                if use_pixnorm:
+                                    h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
                         else:       
                             h = act(conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', use_wscale = use_wscale), activation)
-                            # if i == 2:
-                            #     steffe1 = h
-                            h = pixel_norm(h)
-                            # if i == 2:
-                            #     steffe2 = h
-                            # print('layer5 below right?')
-                            # stoffe = h
+                            if use_pixnorm:
+                                h = pixel_norm(h)
                         print('g_h'+str(i+1)+':', h.get_shape())
                     else:
                         if i <= layers - 2 - 2*useBetaIdx:
                             if i == layers - 2 - 2*useBetaIdx:
                                 h = act(conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', useBeta = useBeta, beta = beta, last = True, use_wscale = use_wscale), activation)
-                                # if i == 2:
-                                #     steffe1 = h
-                                h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
-                                # if i == 2:
-                                #     steffe2 = h
+                                if use_pixnorm:
+                                    h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
                             else:
-                            #     if i == 3: # 2 innan
-                            #         # h = tf.constant(1.0,shape=[1,int(h.get_shape()[1]),int(h.get_shape()[1]),int(h.get_shape()[-1])])
-                            #         h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
-                            # np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME', useBeta = useBeta, beta = beta)
-                            #         print('returning this coming layer FOR zdim 16!')
-                            #         stoffe = h
-                            #     else:
-                            #         print('not tensor 1 before here')
                                 h = act(conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', useBeta = useBeta, beta = beta, use_wscale = use_wscale), activation)
-                                # if i == 2:
-                                #     steffe1 = h         
-                                h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
-                                # if i == 2:
-                                #     steffe2 = h
+                                if use_pixnorm:      
+                                    h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
                         else:
-                            # if i == 3:
-                            #     # h = tf.constant(1.0,shape=[1,int(h.get_shape()[1]),int(h.get_shape()[1]),int(h.get_shape()[-1])])
-                            #     h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
-                            # np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))), padding = 'SAME')
-                            #     print('returning this coming layer FOR zdim 32!')
-                            #     stoffe = h
-                            # else:
                             h = act(conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', use_wscale = use_wscale), activation)
-                            # if i == 2:
-                            #     steffe1 = h
-                            h = pixel_norm(h)
-                            # if i == 2:
-                            #     steffe2 = h
+                            if use_pixnorm:
+                                h = pixel_norm(h)
                         print('g_h'+str(i+1)+':', h.get_shape())
                 elif feature_map_shrink == 'f':
                     if i >= idx_shrink:
                         if i <= layers - 2 - 2*useBetaIdx:
                             if i == layers - 2 - 2*useBetaIdx:
                                 h = act(conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', useBeta = useBeta, beta = beta, last = True, use_wscale = use_wscale), activation)
-                                h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
+                                if use_pixnorm:
+                                    h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
                             else:
                                 h = act(conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', useBeta = useBeta, beta = beta, use_wscale = use_wscale), activation)
-                                h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
+                                if use_pixnorm:
+                                    h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
                         else:
                             h = act(conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', use_wscale = use_wscale), activation)
-                            h = pixel_norm(h)
+                            if use_pixnorm:
+                                h = pixel_norm(h)
                         print('g_h'+str(i+1)+':', h.get_shape())
                     else:
                         if i <= layers - 2 - 2*useBetaIdx:
                             if i == layers - 2 - 2*useBetaIdx:
                                 h = act(conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', useBeta = useBeta, beta = beta, last = True, use_wscale = use_wscale), activation)
-                                h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
+                                if use_pixnorm:
+                                    h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
                             else:
                                 h = act(conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', useBeta = useBeta, beta = beta, use_wscale = use_wscale), activation)
-                                h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
+                                if use_pixnorm:
+                                    h = pixel_norm(h, useGamma = useGamma, gamma = gamma)
                         else:
                             h = act(conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='g_h'+str(i+1), padding = 'SAME', use_wscale = use_wscale), activation)
-                            h = pixel_norm(h)
+                            if use_pixnorm:
+                                h = pixel_norm(h)
                         print('g_h'+str(i+1)+':', h.get_shape())
 
                 
@@ -155,8 +120,6 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
             h = tf.add(tf.scalar_mul(1-alpha,res_connect), tf.scalar_mul(alpha,h), name = 'g_smoothed')
             print('fused')
         out = conv2d(h, 3, 1, 1, 1, 1, name='g_out', use_wscale = use_wscale)
-        out = pixel_norm(out)
-
 
         print('out generator shape: ', out.get_shape())
         
@@ -279,8 +242,7 @@ def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 
                 h = lrelu(h)
             elif activation == 'relu':
                 h = relu(h)
-
-        out = dense(h, 1, name = 'd_out', use_wscale = use_wscale)
+        out = dense(h, 1, name = 'd_out', useBeta = useBeta, beta = beta, use_wscale = use_wscale)
 
         print('d_out:', out.get_shape())
     return tf.nn.sigmoid(out), out

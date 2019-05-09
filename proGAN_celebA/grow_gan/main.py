@@ -18,26 +18,26 @@ useBeta = 'n.n.n.n.n.n'
 stage = 'i.i.i.i.i.i'
 
 # ----------------------------------
-# Exact pro settings
+# Exact crippled pro settings
 # z_dims = '512.512.512.512.512.512'
-# epochs = '4.8.8.8.8.8'
+# epochs = '3.6.6.6.6.6'
 # g_layers = '2.4.6.8.10.12'
 # d_layers = '3.5.7.9.11.13'
 # output_dims = '4.8.16.32.64.128' 
 # useAlpha = 'n.y.y.y.y.y'
 # useBeta = 'n.n.n.n.n.n'
 # stage = 'i.i.i.i.i.i'
-# feature_map_shrink = 'pro' # ['n', 'f'] generator
-# feature_map_growth = 'pro' # ['n', 'f'] discriminator
+# feature_map_shrink = 'cpro' # ['n', 'f'] generator
+# feature_map_growth = 'cpro' # ['n', 'f'] discriminator
 # spatial_map_shrink = 'n' # ['n', 'f'] discriminator
 # spatial_map_growth = 'n' # ['n', 'f'] generator
 # -----------------------------------
 
 # z_dims = '256'
 # epochs = '44'
-# g_layers = '12'
-# d_layers = '13'
-# output_dims = '128' 
+# g_layers = '4'
+# d_layers = '5'
+# output_dims = '8' 
 # useAlpha = 'n'
 # useBeta = 'n'
 # stage = 'i'
@@ -51,7 +51,7 @@ loss = 'wa' # ['RaLS', 'ns', 'wa']
 z_distr = 'g' # ['u', 'g']
 activation = 'lrelu'
 weight_init = 'z' # ['z', 'u', 'g', 'x', 'he']
-lr = 0.001
+lr = 0.0001
 beta1 = 0.0
 beta2 = 0.99
 epsilon = 0.00000001
@@ -65,9 +65,9 @@ crop = True
 trainflag = True
 visualize = False
 minibatch_std = True
-use_wscale = True
-use_pixnorm = True
-D_loss_extra = True
+use_wscale = False
+use_pixnorm = False
+D_loss_extra = False
 G_run_avg = True
 # THEN ONLY ADAPTIVE BATCH SIZE LEFT
 
@@ -143,7 +143,7 @@ FLAGS = flags.FLAGS
 
 def main(_):
     pp.pprint(flags.FLAGS.__flags)
-    model_dir = FLAGS.z_dims +'_'+ FLAGS.epochs +'_'+ FLAGS.g_layers +'_'+ FLAGS.d_layers +'_'+ FLAGS.output_dims +'_'+FLAGS.feature_map_shrink+FLAGS.feature_map_growth+FLAGS.spatial_map_shrink+FLAGS.spatial_map_growth+'_'+ FLAGS.loss +'_'+FLAGS.z_distr +'_'+ FLAGS.activation +'_'+ FLAGS.weight_init +'_'+ str(FLAGS.batch_size) +'_'+str(FLAGS.g_batchnorm) +'_'+ str(FLAGS.d_batchnorm) +'_'+ str(FLAGS.normalize_z)+'_'+ str(FLAGS.minibatch_std) +'_'+str(FLAGS.use_wscale) +'_'+ str(FLAGS.use_pixnorm) +'_'+ str(FLAGS.D_loss_extra)
+    model_dir = str(FLAGS.lr)+'_'+FLAGS.z_dims +'_'+ FLAGS.epochs +'_'+ FLAGS.g_layers +'_'+ FLAGS.d_layers +'_'+ FLAGS.output_dims +'_'+FLAGS.feature_map_shrink+FLAGS.feature_map_growth+FLAGS.spatial_map_shrink+FLAGS.spatial_map_growth+'_'+ FLAGS.loss +'_'+FLAGS.z_distr +'_'+ FLAGS.activation +'_'+ FLAGS.weight_init +'_'+ str(FLAGS.batch_size) +'_'+str(FLAGS.g_batchnorm) +'_'+ str(FLAGS.d_batchnorm) +'_'+ str(FLAGS.normalize_z)+'_'+ str(FLAGS.minibatch_std) +'_'+str(FLAGS.use_wscale) +'_'+ str(FLAGS.use_pixnorm) +'_'+ str(FLAGS.D_loss_extra)
 
 
     gan = growGAN(

@@ -19,7 +19,6 @@ class growGAN(object):
 			output_dims,
 			useAlpha,
 			useBeta,
-			useGamma,
 			useTau,
 			feature_map_shrink,
 			feature_map_growth,
@@ -29,7 +28,6 @@ class growGAN(object):
 			loss,
 			z_distr,
 			activation,
-			weight_init,
 			lr,
 			beta1,
 			beta2,
@@ -37,18 +35,12 @@ class growGAN(object):
 			batch_size,
 			sample_num,
 			gpu,
-			g_batchnorm,
-			d_batchnorm,
 			normalize_z,
 			crop,
 			trainflag,
 			visualize,
 			model_dir,
-			minibatch_std,
-			use_wscale,
-			use_pixnorm,
-			D_loss_extra,
-			G_run_avg):
+			minibatch_std):
 
 		self.z_dims = z_dims
 		self.epochs = epochs
@@ -57,7 +49,6 @@ class growGAN(object):
 		self.output_dims = output_dims
 		self.useAlpha = useAlpha
 		self.useBeta = useBeta
-		self.useGamma = useGamma
 		self.useTau = useTau
 		self.feature_map_shrink = feature_map_shrink
 		self.feature_map_growth = feature_map_growth
@@ -67,7 +58,6 @@ class growGAN(object):
 		self.loss = loss
 		self.z_distr = z_distr
 		self.activation = activation 
-		self.weight_init = weight_init
 		self.lr = lr
 		self.beta1 = beta1
 		self.beta2 = beta2
@@ -75,18 +65,12 @@ class growGAN(object):
 		self.batch_size = batch_size
 		self.sample_num = sample_num
 		self.gpu = gpu
-		self.g_batchnorm = g_batchnorm
-		self.d_batchnorm = d_batchnorm
 		self.normalize_z = normalize_z
 		self.crop = crop
 		self.trainflag = trainflag
 		self.visualize = visualize
 		self.model_dir = model_dir
 		self.minibatch_std = minibatch_std
-		self.use_wscale = use_wscale
-		self.use_pixnorm = use_pixnorm
-		self.D_loss_extra = D_loss_extra
-		self.G_run_avg = G_run_avg
 
 	def train(self):
 		self.z_dims = self.z_dims.split('.')
@@ -102,7 +86,6 @@ class growGAN(object):
 		self.stage = self.stage.split('.')
 		self.useAlpha = self.useAlpha.split('.')
 		self.useBeta = self.useBeta.split('.')
-		self.useGamma = self.useGamma.split('.')
 		self.useTau = self.useTau.split('.')
 
 		nbrCycles = len(self.z_dims)
@@ -113,7 +96,6 @@ class growGAN(object):
 		run_config.gpu_options.visible_device_list=str(self.gpu)
 		for i in range(nbrCycles):
 			print('cycle start: ', i+1)
-
 
 			if i >= 1:
 				oldSpecs = {
@@ -128,7 +110,6 @@ class growGAN(object):
 					"stage" : self.stage[i-1],
 					"useAlpha" : self.useAlpha[i-1],
 					"useBeta" : self.useBeta[i-1],
-					"useGamma" : self.useGamma[i-1],
 					"useTau" : self.useTau[i-1]
 				}
 			else:
@@ -143,7 +124,6 @@ class growGAN(object):
 					d_layers = self.d_layers[i],
 					useAlpha = self.useAlpha[i],
 					useBeta = self.useBeta[i],
-					useGamma = self.useGamma[i],
 					useTau = self.useTau[i],
 					feature_map_shrink = self.feature_map_shrink,
 					feature_map_growth = self.feature_map_growth,
@@ -153,7 +133,6 @@ class growGAN(object):
 					loss = self.loss,
 					z_distr = self.z_distr,
 					activation = self.activation,
-					weight_init = self.weight_init,
 					lr = self.lr,
 					beta1 = self.beta1,
 					beta2 = self.beta2,
@@ -162,18 +141,12 @@ class growGAN(object):
 					sample_num = self.sample_num,
 					input_size = 128,
 					output_size = self.output_dims[i],
-					g_batchnorm = self.g_batchnorm,
-					d_batchnorm = self.d_batchnorm,
 					normalize_z = self.normalize_z,
 					crop = self.crop,
 					visualize = self.visualize,
 					model_dir = self.model_dir,
-					minibatch_std = self.minibatch_std,
-					use_wscale = self.use_wscale,
-					use_pixnorm = self.use_pixnorm,
-					D_loss_extra = self.D_loss_extra,
-					G_run_avg = self.G_run_avg,
-					oldSpecs = oldSpecs)
+					oldSpecs = oldSpecs,
+					minibatch_std = self.minibatch_std)
 
 
 				if self.trainflag:
@@ -184,7 +157,5 @@ class growGAN(object):
 						raise Exception("[!] Train a model first, then run test mode")
 
 			tf.reset_default_graph()
-			# print('decreasing lr by 10')
-			# self.lr = self.lr/10 # REMEMBER THAT THIS IS HERE
 				# if self.visualize: # check what this does. Is this the test mode?
-				#     visualize(sess, subgan)
+#     visualize(sess, subgan)
