@@ -24,6 +24,23 @@ Below, the random walk interpolations are presented for each model when restrict
 ![](gifs/clgGAN/129-256_5pts_100_50.gif)
 
 # cgGAN
+## Restricted to dimensions: 1-8
+![](gifs/cgGAN/1-8_5pts.gif)
+
+## Restricted to dimensions: 9-16
+![](gifs/cgGAN/9-16_5pts.gif)
+
+## Restricted to dimensions: 17-32
+![](gifs/cgGAN/17-32_5pts.gif)
+
+## Restricted to dimensions: 33-64
+![](gifs/cgGAN/33-64_5pts.gif)
+
+## Restricted to dimensions: 65-128
+![](gifs/cgGAN/65-128_5pts.gif)
+
+## Restricted to dimensions: 129-256
+![](gifs/cgGAN/129-256_5pts.gif)
 
 # bgGAN
 
