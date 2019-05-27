@@ -1,2 +1,6 @@
-model_checkpoint_path: "model"
-all_model_checkpoint_paths: "model"
+model_checkpoint_path: "model9000"
+all_model_checkpoint_paths: "model5000"
+all_model_checkpoint_paths: "model6000"
+all_model_checkpoint_paths: "model7000"
+all_model_checkpoint_paths: "model8000"
+all_model_checkpoint_paths: "model9000"
