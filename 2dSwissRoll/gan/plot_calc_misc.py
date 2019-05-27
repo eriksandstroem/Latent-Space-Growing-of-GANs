@@ -46,54 +46,54 @@ else:
 	if not os.path.exists('../../grid_plots/'+arg.d+'/'+arg.arch):
 	    os.makedirs('../../grid_plots/'+arg.d+'/'+arg.arch)
 
-# retrieve data from log file
-if arg.gflag == 'grown':
-	location = '../../logs/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.log'
-else:
-	location = '../../logs/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log'
-f  = open(location, "r")
-x = f.readlines()
-if arg.gflag == 'grown':
-	d_loss = np.zeros(len(x)-13)
-	g_loss = np.zeros(len(x)-13)
-	for idx, line in enumerate(x[13:]):
-		split = line.split(' ')
-		d = split[-1]
-		g = split[-3]
-		d_loss[idx] = float(d[5:])
-		g_loss[idx] = float(g[5:-1])
+# # retrieve data from log file
+# if arg.gflag == 'grown':
+# 	location = '../../logs/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.log'
+# else:
+# 	location = '../../logs/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'.log'
+# f  = open(location, "r")
+# x = f.readlines()
+# if arg.gflag == 'grown':
+# 	d_loss = np.zeros(len(x)-13)
+# 	g_loss = np.zeros(len(x)-13)
+# 	for idx, line in enumerate(x[13:]):
+# 		split = line.split(' ')
+# 		d = split[-1]
+# 		g = split[-3]
+# 		d_loss[idx] = float(d[5:])
+# 		g_loss[idx] = float(g[5:-1])
 
-	xaxis = np.arange(0,(len(x)-13)*50,50)
+# 	xaxis = np.arange(0,(len(x)-13)*50,50)
 
-else:
-	d_loss = np.zeros(len(x)-11)
-	g_loss = np.zeros(len(x)-11)
-	for idx, line in enumerate(x[11:]):
-		split = line.split(' ')
-		d = split[-1]
-		g = split[-3]
-		d_loss[idx] = float(d[5:])
-		g_loss[idx] = float(g[5:-1])
+# else:
+# 	d_loss = np.zeros(len(x)-11)
+# 	g_loss = np.zeros(len(x)-11)
+# 	for idx, line in enumerate(x[11:]):
+# 		split = line.split(' ')
+# 		d = split[-1]
+# 		g = split[-3]
+# 		d_loss[idx] = float(d[5:])
+# 		g_loss[idx] = float(g[5:-1])
 
 
-	xaxis = np.arange(0,(len(x)-11)*50,50)
-# plot data
-plt.figure()
-plt.grid(True)
-plt.xlabel('Iteration')
-plt.ylabel('Loss')
-plt.title('Discriminator and Generator Loss')
-plt.tight_layout()
-plt.plot(xaxis, d_loss,label = 'Discriminator Loss')
-plt.plot(xaxis, g_loss,label = 'Generator Loss')
-plt.legend()
+# 	xaxis = np.arange(0,(len(x)-11)*50,50)
+# # plot data
+# plt.figure()
+# plt.grid(True)
+# plt.xlabel('Iteration')
+# plt.ylabel('Loss')
+# plt.title('Discriminator and Generator Loss')
+# plt.tight_layout()
+# plt.plot(xaxis, d_loss,label = 'Discriminator Loss')
+# plt.plot(xaxis, g_loss,label = 'Generator Loss')
+# plt.legend()
 
-if arg.gflag == 'grown':
-	plt.savefig('../../loss_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png')
-else:
-	plt.savefig('../../loss_plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.png')
+# if arg.gflag == 'grown':
+# 	plt.savefig('../../loss_plots/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'.png')
+# else:
+# 	plt.savefig('../../loss_plots/'+arg.d+'/'+arg.arch+'/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_I'+arg.init+'.png')
 
-plt.close()
+# plt.close()
 
 
 # -------------- calculate discriminator statistics for generated images and real images --------------
@@ -206,7 +206,10 @@ with tf.Session() as sess:
 		elif arg.zdim == 1:
 			gax = ax1.scatter(g1, g2, marker='.',s=20)
 	elif arg.plotstyle == 'connectivity':
-		cg = np.reshape(Z_batch,(len(Z_batch),1))
+		print(len(Z_batch))
+		print(np.shape(Z_batch))
+		# cg = np.reshape(Z_batch[:,1],(len(Z_batch),1))
+		cg = np.reshape(g_prob,(len(g_plot),1))
 		cd_dense = np.reshape(d_prob_dense,(len(d_prob_dense),1))
 		xax = ax1.scatter(x1,x2, marker='x')
 		if arg.zdim != 1:

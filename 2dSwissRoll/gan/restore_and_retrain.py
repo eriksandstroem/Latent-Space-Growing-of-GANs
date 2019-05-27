@@ -30,7 +30,7 @@ parser.add_argument('--arch', '--architecture', default='2.16', help="architectu
 parser.add_argument('--l', '--loss', default='wa', choices=['ns', 'wa'], help="loss function (default: wa)")
 parser.add_argument('--init', '--initialization', default='z', choices=['z', 'n', 'u','x'], help="growth initialization (default: z)")
 parser.add_argument('--d', '--dataset', default='standard', choices=['standard', 'sinus_single', 'sinus_double'], help="dataset (default: standard)")
-parser.add_argument('--advplot', '--advanced_plot', default='standard', choices=['standard', 'advanced'], help="advanced plotting flag (default: standard)")
+parser.add_argument('--advplot', '--advanced_plot', default='advanced', choices=['standard', 'advanced'], help="advanced plotting flag (default: standard)")
 parser.add_argument('--w', '--wiggle_weights', default='no', choices=['no', 'yes'], help="wiggle weights flag (default: no)")
 parser.add_argument('--wiggle', '--wiggle_noise', default=0.01, type=float, help='wiggle std (default: 0.01)')
 parser.add_argument('--a', '--activation', default='lre', help="activation (default: leaky relu)")
@@ -303,7 +303,8 @@ with tf.Session(config = config) as sess:
             elif arg.zdim == 1:
                 gax = ax1.scatter(g1, g2, c = cg, marker='.',s=20)
                 
-            xax = ax1.scatter(x1,x2, c = cd, marker='x')
+            # xax = ax1.scatter(x1,x2, c = cd, marker='x')
+            xax = ax1.scatter(x1,x2, marker='x')
             ax1.legend((xax,gax), ("Real Data", "Generated Data"))
             ax1.set_title('Sample Space')
 
@@ -358,6 +359,6 @@ with tf.Session(config = config) as sess:
         if i%50 == 0:
             logger.info('==>>> iteration:{}, g loss:{}, d loss:{}'.format(i, gloss, dloss))
 
-
-    saver.save(sess, '../../models/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/model')
+        if i%1000 == 0:
+            saver.save(sess, '../../models/'+arg.d+'/'+arg.arch+'_grown/TN'+str(arg.tn)+'_Lr'+str(arg.lr)+'_D'+str(arg.zdim)+'_Z'+arg.z+'_L'+arg.l+'_OP'+arg.opt+'_ACT'+arg.a+'_I'+arg.init+'_PTN'+str(arg.ptn)+'/model'+str(i))
 
