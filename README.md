@@ -6,41 +6,41 @@ This README-file contains extra material for Section 7.2.1 and 7.2.2 not covered
 Below, the random walk interpolations are presented for each model when restricting the random walks for dimensions {1-8,9-16,17-32,33-64,65-128,129-256}, one at a time. 
 # clgGAN
 ## Restricted to dimensions: 1-8
-![](gifs/clgGAN/1-8_5pts_100_50.gif)
+![](gifs_4x4/clgGAN/1-8.gif)
 
 ## Restricted to dimensions: 9-16
-![](gifs/clgGAN/9-16_5pts_100_50.gif)
+![](gifs_4x4/clgGAN/9-16.gif)
 
 ## Restricted to dimensions: 17-32
-![](gifs/clgGAN/17-32_5pts_100_50.gif)
+![](gifs_4x4/clgGAN/17-32.gif)
 
 ## Restricted to dimensions: 33-64
-![](gifs/clgGAN/33-64_5pts_100_50.gif)
+![](gifs_4x4/clgGAN/33-64.gif)
 
 ## Restricted to dimensions: 65-128
-![](gifs/clgGAN/65-128_5pts_100_50.gif)
+![](gifs_4x4/clgGAN/65-128.gif)
 
 ## Restricted to dimensions: 129-256
-![](gifs/clgGAN/129-256_5pts_100_50.gif)
+![](gifs_4x4/clgGAN/129-256.gif)
 
 # cgGAN
 ## Restricted to dimensions: 1-8
-![](gifs/cgGAN/1-8_5pts.gif)
+![](gifs_4x4/cgGAN/1-8.gif)
 
 ## Restricted to dimensions: 9-16
-![](gifs/cgGAN/9-16_5pts.gif)
+![](gifs_4x4/cgGAN/9-16.gif)
 
 ## Restricted to dimensions: 17-32
-![](gifs/cgGAN/17-32_5pts.gif)
+![](gifs_4x4/cgGAN/17-32.gif)
 
 ## Restricted to dimensions: 33-64
-![](gifs/cgGAN/33-64_5pts.gif)
+![](gifs_4x4/cgGAN/33-64.gif)
 
 ## Restricted to dimensions: 65-128
-![](gifs/cgGAN/65-128_5pts.gif)
+![](gifs_4x4/cgGAN/65-128.gif)
 
 ## Restricted to dimensions: 129-256
-![](gifs/cgGAN/129-256_5pts.gif)
+![](gifs_4x4/cgGAN/129-256.gif)
 
 # bgGAN
 
