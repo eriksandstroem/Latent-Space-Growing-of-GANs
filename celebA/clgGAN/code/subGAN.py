@@ -16,7 +16,7 @@ import matplotlib
 matplotlib.use('agg')
 from matplotlib import cm, pyplot as plt
 
-class subGANroj(object):
+class subGAN(object):
 	def __init__(
 		self,
 		sess,
@@ -391,7 +391,7 @@ class subGANroj(object):
 						 self.d_loss_fake_sample, self.d_loss_real_sample, self.d_loss_sample_wo_gp],
 						feed_dict={
 							self.z: sample_z,
-							self.inputs_sample: sample_inputs, self.beta: beta, self.alpha: alpha
+							self.inputs_sample: sample_inputs, self.beta: beta, self.alpha: alpha, self.tau: tau
 						},
 					)
 					D_real = np.mean(D_real)
@@ -495,7 +495,7 @@ class subGANroj(object):
 						[self.sampler, self.d_loss_sample, self.g_loss_sample, self.D_real_sample, self.D_fake_sample],
 						feed_dict={
 							self.z: sample_z,
-							self.inputs_sample: sample_inputs, self.alpha: alpha, self.beta: beta
+							self.inputs_sample: sample_inputs, self.alpha: alpha, self.beta: beta, self.tau: tau
 						},
 					)
 					if not os.path.exists('../{}/{}'.format('train_samples', self.model_dir_full)):
@@ -512,13 +512,13 @@ class subGANroj(object):
 
 				# Update D network
 				_, summary_str = self.sess.run([d_optim, self.d_sum], feed_dict={
-					self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					self.inputs: batch_images, self.z: batch_z, self.alpha: alpha, self.beta: beta, self.tau: tau})
 
 				self.writer.add_summary(summary_str, counter)
 
 				# Update G network
 				_, summary_str = self.sess.run([g_optim, self.g_sum], feed_dict={
-					self.z: batch_z, self.alpha: alpha, self.beta: beta})
+					self.z: batch_z, self.alpha: alpha, self.beta: beta, self.tau: tau})
 
 				self.writer.add_summary(summary_str, counter)
 

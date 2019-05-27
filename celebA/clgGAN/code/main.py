@@ -99,7 +99,7 @@ FLAGS = flags.FLAGS
 def main(_):
     pp.pprint(flags.FLAGS.__flags)
 
-    model_dir = 'mixing_failedminibstd'+str(FLAGS.lr)+'_'+FLAGS.z_dims +'_'+ FLAGS.epochs +'_'+ FLAGS.g_layers +'_'+ FLAGS.d_layers +'_'+ FLAGS.output_dims +'_'+FLAGS.feature_map_shrink+FLAGS.feature_map_growth+FLAGS.spatial_map_shrink+FLAGS.spatial_map_growth+'_'+ FLAGS.loss +'_'+FLAGS.z_distr +'_'+ FLAGS.activation +'_'+ str(FLAGS.batch_size) +'_'+ str(FLAGS.normalize_z)+'_'+ str(FLAGS.minibatch_std)
+    model_dir = 'mixing_'+str(FLAGS.lr)+'_'+FLAGS.z_dims +'_'+ FLAGS.epochs +'_'+ FLAGS.g_layers +'_'+ FLAGS.d_layers +'_'+ FLAGS.output_dims +'_'+FLAGS.feature_map_shrink+FLAGS.feature_map_growth+FLAGS.spatial_map_shrink+FLAGS.spatial_map_growth+'_'+ FLAGS.loss +'_'+FLAGS.z_distr +'_'+ FLAGS.activation +'_'+ str(FLAGS.batch_size) +'_'+ str(FLAGS.normalize_z)+'_'+ str(FLAGS.minibatch_std)
 
 
     gan = growGAN(

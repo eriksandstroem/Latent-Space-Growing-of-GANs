@@ -28,7 +28,7 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                     h = upscale2d(h, factor=2)
                     if i == layers - 2 and useAlpha == 'y':
                         res_connect = h
-                        res_connect = conv2d(res_connect, 3, 1, 1, 1, 1, name='g_out'+str(layers-2))
+                        res_connect = conv2d(res_connect, 3, 1, 1, 1, 1, name='g_out'+str(layers-2), useBeta = useBeta, beta = beta, last = True)
 
                 elif spatial_map_growth == 'f' and int(h.get_shape()[1]) < output_dim:
                     h = upscale2d(h, factor=2)
