@@ -206,8 +206,6 @@ with tf.Session() as sess:
 		elif arg.zdim == 1:
 			gax = ax1.scatter(g1, g2, marker='.',s=20)
 	elif arg.plotstyle == 'connectivity':
-		print(len(Z_batch))
-		print(np.shape(Z_batch))
 		# cg = np.reshape(Z_batch[:,1],(len(Z_batch),1))
 		cg = np.reshape(g_prob,(len(g_plot),1))
 		cd_dense = np.reshape(d_prob_dense,(len(d_prob_dense),1))
