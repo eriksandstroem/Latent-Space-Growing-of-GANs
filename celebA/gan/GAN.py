@@ -12,6 +12,8 @@ from model import *
 from ops import *
 from utils import *
 
+import pdb
+
 
 
 class GAN(object):
@@ -257,6 +259,17 @@ class GAN(object):
         self.saver = tf.train.Saver()
 
     def train(self, config):
+        # g_optim = tf.train.AdamOptimizer(
+        #     config.learning_rate,
+        #     beta1=config.beta1).minimize(
+        #     self.g_loss,
+        #     var_list=self.g_vars)
+
+        g_optim = tf.train.AdamOptimizer(
+            config.learning_rate,
+            beta1=config.beta1,beta2 = config.beta2, epsilon= config.epsilon).minimize(
+            self.g_loss,
+            var_list=self.g_vars)
 
         d_optim = tf.train.AdamOptimizer(
             config.learning_rate,
@@ -264,11 +277,6 @@ class GAN(object):
             self.d_loss,
             var_list=self.d_vars)
 
-        g_optim = tf.train.AdamOptimizer(
-            config.learning_rate,
-            beta1=config.beta1).minimize(
-            self.g_loss,
-            var_list=self.g_vars)
 
         try:
             tf.global_variables_initializer().run()

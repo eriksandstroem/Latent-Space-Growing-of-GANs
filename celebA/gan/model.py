@@ -457,7 +457,7 @@ def discriminator(image, batch_size=64, reuse=False):
 # fast is that we double the spatial dimension every layer.
 
 def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lrelu', output_dim = 128,
-    feature_map_shrink = 'normal', spatial_map_growth = 'normal'):
+    feature_map_shrink = 'normal', spatial_map_growth = 'normal', stage = 'final', alpha = 1):
     with tf.variable_scope("generator") as scope:
         if reuse:
             scope.reuse_variables()
@@ -475,6 +475,8 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
             else:
                 if spatial_map_growth == 'normal' and i % 2 == 0 and int(h.get_shape()[1]) < output_dim:
                     h = upscale2d(h, factor=2)
+                    if i == layers - 2 and stage == 'intermediate':
+                        res_connect = h
                 elif spatial_map_growth == 'fast' and int(h.get_shape()[1]) < output_dim:
                     h = upscale2d(h, factor=2)
                 if feature_map_shrink == 'normal':
@@ -488,7 +490,6 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                         print('g_h'+str(i+1)+':', h.get_shape())
                 elif feature_map_shrink == 'fast':
                     if i >= idx_shrink:
-                        print('i:', i)
                         h = conv2d(h, int(h.get_shape()[-1])//2, 3, 3, 1, 1, name='g_h'+str(i+1), stddev = 
                         np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
                         print('g_h'+str(i+1)+':', h.get_shape())
@@ -507,7 +508,13 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
                 h = relu(h)
 
         out = conv2d(h, 3, 1, 1, 1, 1, name='g_h'+str(layers+1), stddev = np.sqrt(2/(8*output_dim*output_dim)))
+        if stage == 'intermediate':
+            res_connect = conv2d(res_connect, 3, 1, 1, 1, 1, name='g_h'+str(layers+1)+'res', stddev = np.sqrt(2/(8*output_dim*output_dim)))
+            out = tf.add(res_connect*(1-alpha), out*alpha, name = 'g_smoothed')
+            print('alpha: ', alpha)
+            print('fused')
         print('out generator shape: ', out.get_shape())
+        
         out = tf.nn.tanh(out)
     return out
 
@@ -518,29 +525,52 @@ def G(z, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lre
 
 
 def D(image, batch_size=64, reuse = False, bn = True, layers = 12, activation = 'lrelu', input_dim = 128,
-    feature_map_growth = 'normal', spatial_map_shrink = 'normal'):
+    feature_map_growth = 'normal', spatial_map_shrink = 'normal', stage = 'final', alpha = 1): # stage = ['final', 'intermediate'] (['f', 'i'])
     with tf.variable_scope("discriminator") as scope:
         if reuse:
             scope.reuse_variables()
+
+        idx = layers
+        downsampleList = []
+        idx = idx - 2
+        while idx > 1:
+            downsampleList.append(idx)
+            idx = idx - 2
+
+        print('Indices when to downsample: ', downsampleList)
 
         for i in range(layers):
             if i == 0:
                 # 1x1 conv
                 h = conv2d(image, 8, 1, 1, 1, 1, name = 'd_h1')
+                if stage == 'intermediate':
+                    res_connect = h
+                    res_connect = downscale2d(res_connect, factor = 2)
                 print('d_h1:', h.get_shape())
             elif i == layers-1:
-                print('i:', i)
                 h = conv2dVALID(h, int(h.get_shape()[-1]), 4, 4, 1, 1, name = 'd_h'+str(layers+1))
                 print('d_h'+str(i+1)+':', h.get_shape())
             else:
-                if spatial_map_shrink == 'normal' and (i+1) % 2 == 0 and i != 1 and int(h.get_shape()[1]) > 4:
+                if spatial_map_shrink == 'normal' and i in downsampleList and int(h.get_shape()[1]) > 4: #and i != 1 and (i+1) % 2 == 0
                     h = downscale2d(h, factor=2)
+                    if stage == 'intermediate' and i == 3:
+                        h = tf.add(res_connect*(1-alpha), h*alpha, name = 'd_smoothed')
+                        print('fused')
                 elif spatial_map_shrink == 'fast' and int(h.get_shape()[1]) > 4:
                     h = downscale2d(h, factor=2)
                 if feature_map_growth == 'normal':
-                    if i % 2 == 0 and int(h.get_shape()[-1]) < 256:
+                    if i in downsampleList and int(h.get_shape()[-1]) < 256 and stage == 'final': # i % 2 == 0
                         h = conv2d(h, int(h.get_shape()[-1])*2, 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
                         np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        print('d_h'+str(i+1)+':', h.get_shape())
+                    elif i in downsampleList and int(h.get_shape()[-1]) < 256 and stage == 'intermediate': # i % 2 == 0
+                        if int(h.get_shape()[1])*4 <= int(image.get_shape()[1]):
+                            h = conv2d(h, int(h.get_shape()[-1])*2, 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
+                            np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+                        else:
+                            h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
+                            np.sqrt(2/(int(h.get_shape()[-1])*int(h.get_shape()[1])*int(h.get_shape()[2]))))
+       
                         print('d_h'+str(i+1)+':', h.get_shape())
                     else:
                         h = conv2d(h, int(h.get_shape()[-1]), 3, 3, 1, 1, name='d_h'+str(i+1), stddev = 
