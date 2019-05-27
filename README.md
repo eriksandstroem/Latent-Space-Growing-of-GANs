@@ -100,6 +100,23 @@ Below, the random walk interpolations are presented for each model when restrict
 ![](gifs_4x4/bGAN/129-256.gif)
 
 Below, the random walk interpolations along the coordinate axis for the clgGAN are presented when restricting random walks along the coordinate axis dimensions {1,2,5,90,195,250}, one at a time. 
+## Coordinate walk along dimension: 1
+![](gifs_4x4/clgGAN_coord_walk/1.gif)
+
+## Coordinate walk along dimension: 2
+![](gifs_4x4/clgGAN_coord_walk/2.gif)
+
+## Coordinate walk along dimension: 5
+![](gifs_4x4/clgGAN_coord_walk/5.gif)
+
+## Coordinate walk along dimension: 90
+![](gifs_4x4/clgGAN_coord_walk/90.gif)
+
+## Coordinate walk along dimension: 195
+![](gifs_4x4/clgGAN_coord_walk/195.gif)
+
+## Coordinate walk along dimension: 250
+![](gifs_4x4/clgGAN_coord_walk/250.gif)
 
 # Setup
 Place a directory called "celebA_dataset" where the model directory, e.g., "clgGAN" is located. In the "celebA_dataset" directory, place another folder called "celebA" containing the images belonging to the dataset.
