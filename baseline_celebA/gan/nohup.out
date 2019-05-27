@@ -1,0 +1,628 @@
+2019-05-13 22:37:31.795619: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-05-13 22:37:31.982039: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1105] Found device 0 with properties: 
+name: TITAN Xp major: 6 minor: 1 memoryClockRate(GHz): 1.582
+pciBusID: 0000:03:00.0
+totalMemory: 11.90GiB freeMemory: 10.54GiB
+2019-05-13 22:37:31.982075: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1195] Creating TensorFlow device (/device:GPU:0) -> (device: 1, name: TITAN Xp, pci bus id: 0000:03:00.0, compute capability: 6.1)
+2019-05-13 22:38:03.496773: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-05-13 22:38:03.662358: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1105] Found device 0 with properties: 
+name: TITAN Xp major: 6 minor: 1 memoryClockRate(GHz): 1.582
+pciBusID: 0000:03:00.0
+totalMemory: 11.90GiB freeMemory: 8.17GiB
+2019-05-13 22:38:03.662392: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1195] Creating TensorFlow device (/device:GPU:0) -> (device: 1, name: TITAN Xp, pci bus id: 0000:03:00.0, compute capability: 6.1)
+2019-05-13 22:38:27.226467: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-05-13 22:38:27.393735: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1105] Found device 0 with properties: 
+name: TITAN Xp major: 6 minor: 1 memoryClockRate(GHz): 1.582
+pciBusID: 0000:03:00.0
+totalMemory: 11.90GiB freeMemory: 5.81GiB
+2019-05-13 22:38:27.393767: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1195] Creating TensorFlow device (/device:GPU:0) -> (device: 1, name: TITAN Xp, pci bus id: 0000:03:00.0, compute capability: 6.1)
+{'D_loss_extra': <absl.flags._flag.BooleanFlag object at 0x7f98b4ce7d30>,
+ 'activation': <absl.flags._flag.Flag object at 0x7f98b4ce75c0>,
+ 'batch_size': <absl.flags._flag.Flag object at 0x7f98b4ce7908>,
+ 'beta1': <absl.flags._flag.Flag object at 0x7f98b4ce7710>,
+ 'beta2': <absl.flags._flag.Flag object at 0x7f98b4ce77b8>,
+ 'crop': <absl.flags._flag.BooleanFlag object at 0x7f98b4ce7b70>,
+ 'd_layers': <absl.flags._flag.Flag object at 0x7f98b5574e48>,
+ 'epochs': <absl.flags._flag.Flag object at 0x7f990f401710>,
+ 'epsilon': <absl.flags._flag.Flag object at 0x7f98b4ce7860>,
+ 'feature_map_growth': <absl.flags._flag.Flag object at 0x7f98b4ce7278>,
+ 'feature_map_shrink': <absl.flags._flag.Flag object at 0x7f98b4ce7198>,
+ 'g_layers': <absl.flags._flag.Flag object at 0x7f98b4cda4e0>,
+ 'gpu': <absl.flags._flag.Flag object at 0x7f98b4ce7a58>,
+ 'h': <tensorflow.python.platform.app._HelpFlag object at 0x7f98b4ce7da0>,
+ 'help': <tensorflow.python.platform.app._HelpFlag object at 0x7f98b4ce7da0>,
+ 'helpfull': <tensorflow.python.platform.app._HelpfullFlag object at 0x7f98b4ce7e10>,
+ 'helpshort': <tensorflow.python.platform.app._HelpshortFlag object at 0x7f98b4ce7e80>,
+ 'loss': <absl.flags._flag.Flag object at 0x7f98b4ce7470>,
+ 'lr': <absl.flags._flag.Flag object at 0x7f98b4ce76a0>,
+ 'minibatch_std': <absl.flags._flag.BooleanFlag object at 0x7f98b4ce7be0>,
+ 'normalize_z': <absl.flags._flag.BooleanFlag object at 0x7f98b4ce7a90>,
+ 'output_dims': <absl.flags._flag.Flag object at 0x7f98b4ce71d0>,
+ 'sample_num': <absl.flags._flag.Flag object at 0x7f98b4ce79b0>,
+ 'spatial_map_growth': <absl.flags._flag.Flag object at 0x7f98b4ce73c8>,
+ 'spatial_map_shrink': <absl.flags._flag.Flag object at 0x7f98b4ce7320>,
+ 'use_pixnorm': <absl.flags._flag.BooleanFlag object at 0x7f98b4ce7cc0>,
+ 'use_wscale': <absl.flags._flag.BooleanFlag object at 0x7f98b4ce7c50>,
+ 'z_dims': <absl.flags._flag.Flag object at 0x7f9916164e80>,
+ 'z_distr': <absl.flags._flag.Flag object at 0x7f98b4ce7518>}
+input shape z: (?, 64)
+batch or sample size:  16
+g_h1: (?, 4, 4, 256)
+g_h2: (?, 4, 4, 256)
+g_h3: (?, 8, 8, 128)
+g_h4: (?, 8, 8, 128)
+g_h5: (?, 16, 16, 64)
+g_h6: (?, 16, 16, 64)
+g_h7: (?, 32, 32, 32)
+g_h8: (?, 32, 32, 32)
+g_h9: (?, 64, 64, 16)
+g_h10: (?, 64, 64, 16)
+g_h11: (?, 128, 128, 8)
+g_h12: (?, 128, 128, 8)
+out generator shape:  (?, 128, 128, 3)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (16, 128, 128, 8)
+d_h2: (16, 128, 128, 8)
+d_h3: (16, 128, 128, 16)
+d_h4: (16, 64, 64, 16)
+d_h5: (16, 64, 64, 32)
+d_h6: (16, 32, 32, 32)
+d_h7: (16, 32, 32, 64)
+d_h8: (16, 16, 16, 64)
+d_h9: (16, 16, 16, 128)
+d_h10: (16, 8, 8, 128)
+d_h11: (16, 8, 8, 256)
+shape after minibatch_std:  (16, 4, 4, 257)
+d_h12: (16, 4, 4, 256)
+d_h13: (16, 1, 1, 256)
+d_out: (16, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (?, 128, 128, 8)
+d_h2: (?, 128, 128, 8)
+d_h3: (?, 128, 128, 16)
+d_h4: (?, 64, 64, 16)
+d_h5: (?, 64, 64, 32)
+d_h6: (?, 32, 32, 32)
+d_h7: (?, 32, 32, 64)
+d_h8: (?, 16, 16, 64)
+d_h9: (?, 16, 16, 128)
+d_h10: (?, 8, 8, 128)
+d_h11: (?, 8, 8, 256)
+shape after minibatch_std:  (?, 4, 4, 257)
+d_h12: (?, 4, 4, 256)
+d_h13: (?, 1, 1, 256)
+d_out: (?, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (16, 128, 128, 8)
+d_h2: (16, 128, 128, 8)
+d_h3: (16, 128, 128, 16)
+d_h4: (16, 64, 64, 16)
+d_h5: (16, 64, 64, 32)
+d_h6: (16, 32, 32, 32)
+d_h7: (16, 32, 32, 64)
+d_h8: (16, 16, 16, 64)
+d_h9: (16, 16, 16, 128)
+d_h10: (16, 8, 8, 128)
+d_h11: (16, 8, 8, 256)
+shape after minibatch_std:  (16, 4, 4, 257)
+d_h12: (16, 4, 4, 256)
+d_h13: (16, 1, 1, 256)
+d_out: (16, 1)
+input shape z: (?, 64)
+batch or sample size:  64
+g_h1: (?, 4, 4, 256)
+g_h2: (?, 4, 4, 256)
+g_h3: (?, 8, 8, 128)
+g_h4: (?, 8, 8, 128)
+g_h5: (?, 16, 16, 64)
+g_h6: (?, 16, 16, 64)
+g_h7: (?, 32, 32, 32)
+g_h8: (?, 32, 32, 32)
+g_h9: (?, 64, 64, 16)
+g_h10: (?, 64, 64, 16)
+g_h11: (?, 128, 128, 8)
+g_h12: (?, 128, 128, 8)
+out generator shape:  (?, 128, 128, 3)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (64, 128, 128, 8)
+d_h2: (64, 128, 128, 8)
+d_h3: (64, 128, 128, 16)
+d_h4: (64, 64, 64, 16)
+d_h5: (64, 64, 64, 32)
+d_h6: (64, 32, 32, 32)
+d_h7: (64, 32, 32, 64)
+d_h8: (64, 16, 16, 64)
+d_h9: (64, 16, 16, 128)
+d_h10: (64, 8, 8, 128)
+d_h11: (64, 8, 8, 256)
+shape after minibatch_std:  (64, 4, 4, 257)
+d_h12: (64, 4, 4, 256)
+d_h13: (64, 1, 1, 256)
+d_out: (64, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (?, 128, 128, 8)
+d_h2: (?, 128, 128, 8)
+d_h3: (?, 128, 128, 16)
+d_h4: (?, 64, 64, 16)
+d_h5: (?, 64, 64, 32)
+d_h6: (?, 32, 32, 32)
+d_h7: (?, 32, 32, 64)
+d_h8: (?, 16, 16, 64)
+d_h9: (?, 16, 16, 128)
+d_h10: (?, 8, 8, 128)
+d_h11: (?, 8, 8, 256)
+shape after minibatch_std:  (?, 4, 4, 257)
+d_h12: (?, 4, 4, 256)
+d_h13: (?, 1, 1, 256)
+d_out: (?, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (64, 128, 128, 8)
+d_h2: (64, 128, 128, 8)
+d_h3: (64, 128, 128, 16)
+d_h4: (64, 64, 64, 16)
+d_h5: (64, 64, 64, 32)
+d_h6: (64, 32, 32, 32)
+d_h7: (64, 32, 32, 64)
+d_h8: (64, 16, 16, 64)
+d_h9: (64, 16, 16, 128)
+d_h10: (64, 8, 8, 128)
+d_h11: (64, 8, 8, 256)
+shape after minibatch_std:  (64, 4, 4, 257)
+d_h12: (64, 4, 4, 256)
+d_h13: (64, 1, 1, 256)
+d_out: (64, 1)
+done training
+{'D_loss_extra': <absl.flags._flag.BooleanFlag object at 0x7f34dc6ebdd8>,
+ 'activation': <absl.flags._flag.Flag object at 0x7f34dc6eb668>,
+ 'batch_size': <absl.flags._flag.Flag object at 0x7f34dc6eb9b0>,
+ 'beta1': <absl.flags._flag.Flag object at 0x7f34dc6eb7b8>,
+ 'beta2': <absl.flags._flag.Flag object at 0x7f34dc6eb860>,
+ 'crop': <absl.flags._flag.BooleanFlag object at 0x7f34dc6ebc18>,
+ 'd_layers': <absl.flags._flag.Flag object at 0x7f34dc6eb128>,
+ 'epochs': <absl.flags._flag.Flag object at 0x7f3536dee710>,
+ 'epsilon': <absl.flags._flag.Flag object at 0x7f34dc6eb908>,
+ 'feature_map_growth': <absl.flags._flag.Flag object at 0x7f34dc6eb320>,
+ 'feature_map_shrink': <absl.flags._flag.Flag object at 0x7f34dc6eb278>,
+ 'g_layers': <absl.flags._flag.Flag object at 0x7f34dc6dc320>,
+ 'gpu': <absl.flags._flag.Flag object at 0x7f34dc6ebb00>,
+ 'h': <tensorflow.python.platform.app._HelpFlag object at 0x7f34dc6ebe48>,
+ 'help': <tensorflow.python.platform.app._HelpFlag object at 0x7f34dc6ebe48>,
+ 'helpfull': <tensorflow.python.platform.app._HelpfullFlag object at 0x7f34dc6ebeb8>,
+ 'helpshort': <tensorflow.python.platform.app._HelpshortFlag object at 0x7f34dc6ebf28>,
+ 'loss': <absl.flags._flag.Flag object at 0x7f34dc6eb518>,
+ 'lr': <absl.flags._flag.Flag object at 0x7f34dc6eb748>,
+ 'minibatch_std': <absl.flags._flag.BooleanFlag object at 0x7f34dc6ebc88>,
+ 'normalize_z': <absl.flags._flag.BooleanFlag object at 0x7f34dc6ebb38>,
+ 'output_dims': <absl.flags._flag.Flag object at 0x7f34dc6eb1d0>,
+ 'sample_num': <absl.flags._flag.Flag object at 0x7f34dc6eba58>,
+ 'spatial_map_growth': <absl.flags._flag.Flag object at 0x7f34dc6eb470>,
+ 'spatial_map_shrink': <absl.flags._flag.Flag object at 0x7f34dc6eb3c8>,
+ 'use_pixnorm': <absl.flags._flag.BooleanFlag object at 0x7f34dc6ebd68>,
+ 'use_wscale': <absl.flags._flag.BooleanFlag object at 0x7f34dc6ebcf8>,
+ 'z_dims': <absl.flags._flag.Flag object at 0x7f353db51e80>,
+ 'z_distr': <absl.flags._flag.Flag object at 0x7f34dc6eb5c0>}
+input shape z: (?, 256)
+batch or sample size:  16
+g_h1: (?, 4, 4, 256)
+g_h2: (?, 4, 4, 256)
+g_h3: (?, 8, 8, 128)
+g_h4: (?, 8, 8, 128)
+g_h5: (?, 16, 16, 64)
+g_h6: (?, 16, 16, 64)
+g_h7: (?, 32, 32, 32)
+g_h8: (?, 32, 32, 32)
+g_h9: (?, 64, 64, 16)
+g_h10: (?, 64, 64, 16)
+g_h11: (?, 128, 128, 8)
+g_h12: (?, 128, 128, 8)
+out generator shape:  (?, 128, 128, 3)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (16, 128, 128, 8)
+d_h2: (16, 128, 128, 8)
+d_h3: (16, 128, 128, 16)
+d_h4: (16, 64, 64, 16)
+d_h5: (16, 64, 64, 32)
+d_h6: (16, 32, 32, 32)
+d_h7: (16, 32, 32, 64)
+d_h8: (16, 16, 16, 64)
+d_h9: (16, 16, 16, 128)
+d_h10: (16, 8, 8, 128)
+d_h11: (16, 8, 8, 256)
+shape after minibatch_std:  (16, 4, 4, 257)
+d_h12: (16, 4, 4, 256)
+d_h13: (16, 1, 1, 256)
+d_out: (16, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (?, 128, 128, 8)
+d_h2: (?, 128, 128, 8)
+d_h3: (?, 128, 128, 16)
+d_h4: (?, 64, 64, 16)
+d_h5: (?, 64, 64, 32)
+d_h6: (?, 32, 32, 32)
+d_h7: (?, 32, 32, 64)
+d_h8: (?, 16, 16, 64)
+d_h9: (?, 16, 16, 128)
+d_h10: (?, 8, 8, 128)
+d_h11: (?, 8, 8, 256)
+shape after minibatch_std:  (?, 4, 4, 257)
+d_h12: (?, 4, 4, 256)
+d_h13: (?, 1, 1, 256)
+d_out: (?, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (16, 128, 128, 8)
+d_h2: (16, 128, 128, 8)
+d_h3: (16, 128, 128, 16)
+d_h4: (16, 64, 64, 16)
+d_h5: (16, 64, 64, 32)
+d_h6: (16, 32, 32, 32)
+d_h7: (16, 32, 32, 64)
+d_h8: (16, 16, 16, 64)
+d_h9: (16, 16, 16, 128)
+d_h10: (16, 8, 8, 128)
+d_h11: (16, 8, 8, 256)
+shape after minibatch_std:  (16, 4, 4, 257)
+d_h12: (16, 4, 4, 256)
+d_h13: (16, 1, 1, 256)
+d_out: (16, 1)
+input shape z: (?, 256)
+batch or sample size:  64
+g_h1: (?, 4, 4, 256)
+g_h2: (?, 4, 4, 256)
+g_h3: (?, 8, 8, 128)
+g_h4: (?, 8, 8, 128)
+g_h5: (?, 16, 16, 64)
+g_h6: (?, 16, 16, 64)
+g_h7: (?, 32, 32, 32)
+g_h8: (?, 32, 32, 32)
+g_h9: (?, 64, 64, 16)
+g_h10: (?, 64, 64, 16)
+g_h11: (?, 128, 128, 8)
+g_h12: (?, 128, 128, 8)
+out generator shape:  (?, 128, 128, 3)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (64, 128, 128, 8)
+d_h2: (64, 128, 128, 8)
+d_h3: (64, 128, 128, 16)
+d_h4: (64, 64, 64, 16)
+d_h5: (64, 64, 64, 32)
+d_h6: (64, 32, 32, 32)
+d_h7: (64, 32, 32, 64)
+d_h8: (64, 16, 16, 64)
+d_h9: (64, 16, 16, 128)
+d_h10: (64, 8, 8, 128)
+d_h11: (64, 8, 8, 256)
+shape after minibatch_std:  (64, 4, 4, 257)
+d_h12: (64, 4, 4, 256)
+d_h13: (64, 1, 1, 256)
+d_out: (64, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (?, 128, 128, 8)
+d_h2: (?, 128, 128, 8)
+d_h3: (?, 128, 128, 16)
+d_h4: (?, 64, 64, 16)
+d_h5: (?, 64, 64, 32)
+d_h6: (?, 32, 32, 32)
+d_h7: (?, 32, 32, 64)
+d_h8: (?, 16, 16, 64)
+d_h9: (?, 16, 16, 128)
+d_h10: (?, 8, 8, 128)
+d_h11: (?, 8, 8, 256)
+shape after minibatch_std:  (?, 4, 4, 257)
+d_h12: (?, 4, 4, 256)
+d_h13: (?, 1, 1, 256)
+d_out: (?, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (64, 128, 128, 8)
+d_h2: (64, 128, 128, 8)
+d_h3: (64, 128, 128, 16)
+d_h4: (64, 64, 64, 16)
+d_h5: (64, 64, 64, 32)
+d_h6: (64, 32, 32, 32)
+d_h7: (64, 32, 32, 64)
+d_h8: (64, 16, 16, 64)
+d_h9: (64, 16, 16, 128)
+d_h10: (64, 8, 8, 128)
+d_h11: (64, 8, 8, 256)
+shape after minibatch_std:  (64, 4, 4, 257)
+d_h12: (64, 4, 4, 256)
+d_h13: (64, 1, 1, 256)
+d_out: (64, 1)
+done training
+{'D_loss_extra': <absl.flags._flag.BooleanFlag object at 0x7fabe0fe8da0>,
+ 'activation': <absl.flags._flag.Flag object at 0x7fabe0fe8630>,
+ 'batch_size': <absl.flags._flag.Flag object at 0x7fabe0fe8978>,
+ 'beta1': <absl.flags._flag.Flag object at 0x7fabe0fe8780>,
+ 'beta2': <absl.flags._flag.Flag object at 0x7fabe0fe8828>,
+ 'crop': <absl.flags._flag.BooleanFlag object at 0x7fabe0fe8be0>,
+ 'd_layers': <absl.flags._flag.Flag object at 0x7fabe0fe80f0>,
+ 'epochs': <absl.flags._flag.Flag object at 0x7fac3b6f5710>,
+ 'epsilon': <absl.flags._flag.Flag object at 0x7fabe0fe88d0>,
+ 'feature_map_growth': <absl.flags._flag.Flag object at 0x7fabe0fe82e8>,
+ 'feature_map_shrink': <absl.flags._flag.Flag object at 0x7fabe0fe8240>,
+ 'g_layers': <absl.flags._flag.Flag object at 0x7fabe0fd92b0>,
+ 'gpu': <absl.flags._flag.Flag object at 0x7fabe0fe8ac8>,
+ 'h': <tensorflow.python.platform.app._HelpFlag object at 0x7fabe0fe8e10>,
+ 'help': <tensorflow.python.platform.app._HelpFlag object at 0x7fabe0fe8e10>,
+ 'helpfull': <tensorflow.python.platform.app._HelpfullFlag object at 0x7fabe0fe8e80>,
+ 'helpshort': <tensorflow.python.platform.app._HelpshortFlag object at 0x7fabe0fe8ef0>,
+ 'loss': <absl.flags._flag.Flag object at 0x7fabe0fe84e0>,
+ 'lr': <absl.flags._flag.Flag object at 0x7fabe0fe8710>,
+ 'minibatch_std': <absl.flags._flag.BooleanFlag object at 0x7fabe0fe8c50>,
+ 'normalize_z': <absl.flags._flag.BooleanFlag object at 0x7fabe0fe8b00>,
+ 'output_dims': <absl.flags._flag.Flag object at 0x7fabe0fe8198>,
+ 'sample_num': <absl.flags._flag.Flag object at 0x7fabe0fe8a20>,
+ 'spatial_map_growth': <absl.flags._flag.Flag object at 0x7fabe0fe8438>,
+ 'spatial_map_shrink': <absl.flags._flag.Flag object at 0x7fabe0fe8390>,
+ 'use_pixnorm': <absl.flags._flag.BooleanFlag object at 0x7fabe0fe8d30>,
+ 'use_wscale': <absl.flags._flag.BooleanFlag object at 0x7fabe0fe8cc0>,
+ 'z_dims': <absl.flags._flag.Flag object at 0x7fac42458e80>,
+ 'z_distr': <absl.flags._flag.Flag object at 0x7fabe0fe8588>}
+input shape z: (?, 128)
+batch or sample size:  16
+g_h1: (?, 4, 4, 256)
+g_h2: (?, 4, 4, 256)
+g_h3: (?, 8, 8, 128)
+g_h4: (?, 8, 8, 128)
+g_h5: (?, 16, 16, 64)
+g_h6: (?, 16, 16, 64)
+g_h7: (?, 32, 32, 32)
+g_h8: (?, 32, 32, 32)
+g_h9: (?, 64, 64, 16)
+g_h10: (?, 64, 64, 16)
+g_h11: (?, 128, 128, 8)
+g_h12: (?, 128, 128, 8)
+out generator shape:  (?, 128, 128, 3)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (16, 128, 128, 8)
+d_h2: (16, 128, 128, 8)
+d_h3: (16, 128, 128, 16)
+d_h4: (16, 64, 64, 16)
+d_h5: (16, 64, 64, 32)
+d_h6: (16, 32, 32, 32)
+d_h7: (16, 32, 32, 64)
+d_h8: (16, 16, 16, 64)
+d_h9: (16, 16, 16, 128)
+d_h10: (16, 8, 8, 128)
+d_h11: (16, 8, 8, 256)
+shape after minibatch_std:  (16, 4, 4, 257)
+d_h12: (16, 4, 4, 256)
+d_h13: (16, 1, 1, 256)
+d_out: (16, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (?, 128, 128, 8)
+d_h2: (?, 128, 128, 8)
+d_h3: (?, 128, 128, 16)
+d_h4: (?, 64, 64, 16)
+d_h5: (?, 64, 64, 32)
+d_h6: (?, 32, 32, 32)
+d_h7: (?, 32, 32, 64)
+d_h8: (?, 16, 16, 64)
+d_h9: (?, 16, 16, 128)
+d_h10: (?, 8, 8, 128)
+d_h11: (?, 8, 8, 256)
+shape after minibatch_std:  (?, 4, 4, 257)
+d_h12: (?, 4, 4, 256)
+d_h13: (?, 1, 1, 256)
+d_out: (?, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (16, 128, 128, 8)
+d_h2: (16, 128, 128, 8)
+d_h3: (16, 128, 128, 16)
+d_h4: (16, 64, 64, 16)
+d_h5: (16, 64, 64, 32)
+d_h6: (16, 32, 32, 32)
+d_h7: (16, 32, 32, 64)
+d_h8: (16, 16, 16, 64)
+d_h9: (16, 16, 16, 128)
+d_h10: (16, 8, 8, 128)
+d_h11: (16, 8, 8, 256)
+shape after minibatch_std:  (16, 4, 4, 257)
+d_h12: (16, 4, 4, 256)
+d_h13: (16, 1, 1, 256)
+d_out: (16, 1)
+input shape z: (?, 128)
+batch or sample size:  64
+g_h1: (?, 4, 4, 256)
+g_h2: (?, 4, 4, 256)
+g_h3: (?, 8, 8, 128)
+g_h4: (?, 8, 8, 128)
+g_h5: (?, 16, 16, 64)
+g_h6: (?, 16, 16, 64)
+g_h7: (?, 32, 32, 32)
+g_h8: (?, 32, 32, 32)
+g_h9: (?, 64, 64, 16)
+g_h10: (?, 64, 64, 16)
+g_h11: (?, 128, 128, 8)
+g_h12: (?, 128, 128, 8)
+out generator shape:  (?, 128, 128, 3)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (64, 128, 128, 8)
+d_h2: (64, 128, 128, 8)
+d_h3: (64, 128, 128, 16)
+d_h4: (64, 64, 64, 16)
+d_h5: (64, 64, 64, 32)
+d_h6: (64, 32, 32, 32)
+d_h7: (64, 32, 32, 64)
+d_h8: (64, 16, 16, 64)
+d_h9: (64, 16, 16, 128)
+d_h10: (64, 8, 8, 128)
+d_h11: (64, 8, 8, 256)
+shape after minibatch_std:  (64, 4, 4, 257)
+d_h12: (64, 4, 4, 256)
+d_h13: (64, 1, 1, 256)
+d_out: (64, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (?, 128, 128, 8)
+d_h2: (?, 128, 128, 8)
+d_h3: (?, 128, 128, 16)
+d_h4: (?, 64, 64, 16)
+d_h5: (?, 64, 64, 32)
+d_h6: (?, 32, 32, 32)
+d_h7: (?, 32, 32, 64)
+d_h8: (?, 16, 16, 64)
+d_h9: (?, 16, 16, 128)
+d_h10: (?, 8, 8, 128)
+d_h11: (?, 8, 8, 256)
+shape after minibatch_std:  (?, 4, 4, 257)
+d_h12: (?, 4, 4, 256)
+d_h13: (?, 1, 1, 256)
+d_out: (?, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (64, 128, 128, 8)
+d_h2: (64, 128, 128, 8)
+d_h3: (64, 128, 128, 16)
+d_h4: (64, 64, 64, 16)
+d_h5: (64, 64, 64, 32)
+d_h6: (64, 32, 32, 32)
+d_h7: (64, 32, 32, 64)
+d_h8: (64, 16, 16, 64)
+d_h9: (64, 16, 16, 128)
+d_h10: (64, 8, 8, 128)
+d_h11: (64, 8, 8, 256)
+shape after minibatch_std:  (64, 4, 4, 257)
+d_h12: (64, 4, 4, 256)
+d_h13: (64, 1, 1, 256)
+d_out: (64, 1)
+done training
+2019-05-16 10:16:20.579709: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-05-16 10:16:20.731551: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1105] Found device 0 with properties: 
+name: TITAN Xp major: 6 minor: 1 memoryClockRate(GHz): 1.582
+pciBusID: 0000:03:00.0
+totalMemory: 11.90GiB freeMemory: 10.94GiB
+2019-05-16 10:16:20.731587: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1195] Creating TensorFlow device (/device:GPU:0) -> (device: 1, name: TITAN Xp, pci bus id: 0000:03:00.0, compute capability: 6.1)
+2019-05-16 10:20:32.545195: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-05-16 10:20:32.685091: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1105] Found device 0 with properties: 
+name: TITAN Xp major: 6 minor: 1 memoryClockRate(GHz): 1.582
+pciBusID: 0000:03:00.0
+totalMemory: 11.90GiB freeMemory: 8.58GiB
+2019-05-16 10:20:32.685123: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1195] Creating TensorFlow device (/device:GPU:0) -> (device: 1, name: TITAN Xp, pci bus id: 0000:03:00.0, compute capability: 6.1)
+2019-05-16 10:21:17.545746: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-05-16 10:21:17.724350: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1105] Found device 0 with properties: 
+name: TITAN Xp major: 6 minor: 1 memoryClockRate(GHz): 1.582
+pciBusID: 0000:03:00.0
+totalMemory: 11.90GiB freeMemory: 6.22GiB
+2019-05-16 10:21:17.724410: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1195] Creating TensorFlow device (/device:GPU:0) -> (device: 1, name: TITAN Xp, pci bus id: 0000:03:00.0, compute capability: 6.1)
+2019-05-16 10:21:56.006090: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-05-16 10:21:56.241838: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1105] Found device 0 with properties: 
+name: TITAN Xp major: 6 minor: 1 memoryClockRate(GHz): 1.582
+pciBusID: 0000:03:00.0
+totalMemory: 11.90GiB freeMemory: 3.85GiB
+2019-05-16 10:21:56.241875: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1195] Creating TensorFlow device (/device:GPU:0) -> (device: 1, name: TITAN Xp, pci bus id: 0000:03:00.0, compute capability: 6.1)
+2019-05-16 10:27:51.708702: I tensorflow/core/platform/cpu_feature_guard.cc:137] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-05-16 10:27:51.882027: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1105] Found device 0 with properties: 
+name: TITAN Xp major: 6 minor: 1 memoryClockRate(GHz): 1.582
+pciBusID: 0000:03:00.0
+totalMemory: 11.90GiB freeMemory: 3.85GiB
+2019-05-16 10:27:51.882064: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1195] Creating TensorFlow device (/device:GPU:0) -> (device: 1, name: TITAN Xp, pci bus id: 0000:03:00.0, compute capability: 6.1)
+{'D_loss_extra': <absl.flags._flag.BooleanFlag object at 0x7f4b77a67d68>,
+ 'activation': <absl.flags._flag.Flag object at 0x7f4b77a675f8>,
+ 'batch_size': <absl.flags._flag.Flag object at 0x7f4b77a67940>,
+ 'beta1': <absl.flags._flag.Flag object at 0x7f4b77a67748>,
+ 'beta2': <absl.flags._flag.Flag object at 0x7f4b77a677f0>,
+ 'crop': <absl.flags._flag.BooleanFlag object at 0x7f4b77a67ba8>,
+ 'd_layers': <absl.flags._flag.Flag object at 0x7f4b77a670b8>,
+ 'epochs': <absl.flags._flag.Flag object at 0x7f4bd216c710>,
+ 'epsilon': <absl.flags._flag.Flag object at 0x7f4b77a67898>,
+ 'feature_map_growth': <absl.flags._flag.Flag object at 0x7f4b77a672b0>,
+ 'feature_map_shrink': <absl.flags._flag.Flag object at 0x7f4b77a67208>,
+ 'g_layers': <absl.flags._flag.Flag object at 0x7f4b791a05c0>,
+ 'gpu': <absl.flags._flag.Flag object at 0x7f4b77a67a90>,
+ 'h': <tensorflow.python.platform.app._HelpFlag object at 0x7f4b77a67dd8>,
+ 'help': <tensorflow.python.platform.app._HelpFlag object at 0x7f4b77a67dd8>,
+ 'helpfull': <tensorflow.python.platform.app._HelpfullFlag object at 0x7f4b77a67e48>,
+ 'helpshort': <tensorflow.python.platform.app._HelpshortFlag object at 0x7f4b77a67eb8>,
+ 'loss': <absl.flags._flag.Flag object at 0x7f4b77a674a8>,
+ 'lr': <absl.flags._flag.Flag object at 0x7f4b77a676d8>,
+ 'minibatch_std': <absl.flags._flag.BooleanFlag object at 0x7f4b77a67c18>,
+ 'normalize_z': <absl.flags._flag.BooleanFlag object at 0x7f4b77a67ac8>,
+ 'output_dims': <absl.flags._flag.Flag object at 0x7f4b77a67160>,
+ 'sample_num': <absl.flags._flag.Flag object at 0x7f4b77a679e8>,
+ 'spatial_map_growth': <absl.flags._flag.Flag object at 0x7f4b77a67400>,
+ 'spatial_map_shrink': <absl.flags._flag.Flag object at 0x7f4b77a67358>,
+ 'use_pixnorm': <absl.flags._flag.BooleanFlag object at 0x7f4b77a67cf8>,
+ 'use_wscale': <absl.flags._flag.BooleanFlag object at 0x7f4b77a67c88>,
+ 'z_dims': <absl.flags._flag.Flag object at 0x7f4bd8ecee80>,
+ 'z_distr': <absl.flags._flag.Flag object at 0x7f4b77a67550>}
+input shape z: (?, 32)
+batch or sample size:  16
+g_h1: (?, 4, 4, 256)
+g_h2: (?, 4, 4, 256)
+g_h3: (?, 8, 8, 128)
+g_h4: (?, 8, 8, 128)
+g_h5: (?, 16, 16, 64)
+g_h6: (?, 16, 16, 64)
+g_h7: (?, 32, 32, 32)
+g_h8: (?, 32, 32, 32)
+g_h9: (?, 64, 64, 16)
+g_h10: (?, 64, 64, 16)
+g_h11: (?, 128, 128, 8)
+g_h12: (?, 128, 128, 8)
+out generator shape:  (?, 128, 128, 3)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (16, 128, 128, 8)
+d_h2: (16, 128, 128, 8)
+d_h3: (16, 128, 128, 16)
+d_h4: (16, 64, 64, 16)
+d_h5: (16, 64, 64, 32)
+d_h6: (16, 32, 32, 32)
+d_h7: (16, 32, 32, 64)
+d_h8: (16, 16, 16, 64)
+d_h9: (16, 16, 16, 128)
+d_h10: (16, 8, 8, 128)
+d_h11: (16, 8, 8, 256)
+shape after minibatch_std:  (16, 4, 4, 257)
+d_h12: (16, 4, 4, 256)
+d_h13: (16, 1, 1, 256)
+d_out: (16, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (?, 128, 128, 8)
+d_h2: (?, 128, 128, 8)
+d_h3: (?, 128, 128, 16)
+d_h4: (?, 64, 64, 16)
+d_h5: (?, 64, 64, 32)
+d_h6: (?, 32, 32, 32)
+d_h7: (?, 32, 32, 64)
+d_h8: (?, 16, 16, 64)
+d_h9: (?, 16, 16, 128)
+d_h10: (?, 8, 8, 128)
+d_h11: (?, 8, 8, 256)
+shape after minibatch_std:  (?, 4, 4, 257)
+d_h12: (?, 4, 4, 256)
+d_h13: (?, 1, 1, 256)
+d_out: (?, 1)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (16, 128, 128, 8)
+d_h2: (16, 128, 128, 8)
+d_h3: (16, 128, 128, 16)
+d_h4: (16, 64, 64, 16)
+d_h5: (16, 64, 64, 32)
+d_h6: (16, 32, 32, 32)
+d_h7: (16, 32, 32, 64)
+d_h8: (16, 16, 16, 64)
+d_h9: (16, 16, 16, 128)
+d_h10: (16, 8, 8, 128)
+d_h11: (16, 8, 8, 256)
+shape after minibatch_std:  (16, 4, 4, 257)
+d_h12: (16, 4, 4, 256)
+d_h13: (16, 1, 1, 256)
+d_out: (16, 1)
+input shape z: (?, 32)
+batch or sample size:  64
+g_h1: (?, 4, 4, 256)
+g_h2: (?, 4, 4, 256)
+g_h3: (?, 8, 8, 128)
+g_h4: (?, 8, 8, 128)
+g_h5: (?, 16, 16, 64)
+g_h6: (?, 16, 16, 64)
+g_h7: (?, 32, 32, 32)
+g_h8: (?, 32, 32, 32)
+g_h9: (?, 64, 64, 16)
+g_h10: (?, 64, 64, 16)
+g_h11: (?, 128, 128, 8)
+g_h12: (?, 128, 128, 8)
+out generator shape:  (?, 128, 128, 3)
+Indices when to downsample:  [11, 9, 7, 5, 3]
+d_h1: (64, 128, 128, 8)
+d_h2: (64, 128, 128, 8)
+d_h3: (64, 128, 128, 16)
+d_h4: (64, 64, 64
