@@ -1,4 +1,4 @@
-# Latent Space Exploration of Generative Adversarial Networks
+# Latent Space Growing of Generative Adversarial Networks
 This project was conducted as a master thesis by Erik Sandström during the spring of 2019 at Lund University.
 
 This README-file contains extra material for Section 7.2.1 and 7.2.2 not covered in the thesis report. 
