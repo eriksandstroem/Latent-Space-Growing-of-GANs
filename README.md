@@ -119,4 +119,4 @@ Below, the random walk interpolations along the coordinate axis for the clgGAN a
 ![](gifs_4x4/clgGAN_coord_walk/250.gif)
 
 # Setup
-Place a directory called "celebA_dataset" where the model directory, e.g., "clgGAN" is located. In the "celebA_dataset" directory, place another folder called "celebA" containing the images belonging to the dataset.
+Place a directory called "celebA_dataset" where the model directory, e.g., "clgGAN" is located. In the "celebA_dataset" directory, place another folder called "celebA" containing the images belonging to the dataset. Use the cropped and aligned version of CelebA
